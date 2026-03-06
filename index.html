@@ -932,14 +932,70 @@
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
 
-  /* Responsive */
+  /* ---- RESPONSIVE ---- */
+
+  /* Tablet portrait and below (≤768px) */
   @media (max-width: 768px) {
+    .view { padding: 16px; }
+    .nav-tabs { padding: 0 8px; }
+    .nav-tab { flex: 1; text-align: center; padding: 10px 8px; font-size: 0.75rem; }
     .form-grid { grid-template-columns: 1fr; }
     .tower-select { grid-template-columns: repeat(2, 1fr); }
     .alliance-slots { grid-template-columns: 1fr; }
     .alliance-score-summary { grid-template-columns: 1fr 1fr; }
     .match-stats-grid { grid-template-columns: 1fr 1fr; }
-    .nav-tab { padding: 10px 14px; font-size: 0.75rem; }
+    /* Hide RP Potential and Notes columns on tablet portrait — too wide */
+    #teamsTable th:nth-child(8), #teamsTable td:nth-child(8),
+    #teamsTable th:nth-child(10), #teamsTable td:nth-child(10) { display: none; }
+  }
+
+  /* Phone (≤480px) */
+  @media (max-width: 480px) {
+    /* Header */
+    header { padding: 10px 16px; }
+    .logo { font-size: 1.25rem; }
+    .logo-sub { display: none; }
+
+    /* Nav: tabs fill full width */
+    .nav-tabs { padding: 0; gap: 0; }
+    .nav-tab { padding: 12px 4px; font-size: 0.7rem; letter-spacing: 0.03em; border-bottom-width: 2px; }
+
+    /* Form */
+    .view { padding: 12px; }
+
+    /* Bigger touch targets for +/- counters */
+    .counter-btn { width: 44px; height: 44px; font-size: 1.4rem; }
+    .counter-val { height: 44px; }
+
+    /* Slightly larger toggle chips for touch */
+    .toggle-chip { padding: 8px 14px; }
+
+    /* Teams view controls */
+    .teams-header { flex-direction: column; align-items: stretch; gap: 10px; }
+    .teams-controls { flex-direction: column; }
+    .search-box { width: 100%; }
+    .btn-sm { padding: 10px 14px; text-align: center; }
+
+    /* Teams table: hide Matches, Driving, Reliability columns too */
+    #teamsTable th:nth-child(2), #teamsTable td:nth-child(2),
+    #teamsTable th:nth-child(6), #teamsTable td:nth-child(6),
+    #teamsTable th:nth-child(7), #teamsTable td:nth-child(7) { display: none; }
+    /* Remaining visible: Team# · Avg Score · Avg Fuel · Best Climb · Tags */
+    td, thead th { padding: 10px 8px; }
+
+    /* Modal sheets up from bottom on phone */
+    .modal-overlay { padding: 0; align-items: flex-end; }
+    .modal { max-height: 92vh; border-radius: 12px 12px 0 0; }
+
+    /* Toast: allow wrapping on narrow screens */
+    .toast { white-space: normal; text-align: center; max-width: 88vw; }
+
+    /* Alliance RP pills: stack vertically */
+    .rp-indicators { flex-direction: column; }
+    .rp-pill { min-width: 0; }
+
+    /* Alliance score summary: single column on phone */
+    .alliance-score-summary { grid-template-columns: 1fr; }
   }
 
   /* Entry animation */
