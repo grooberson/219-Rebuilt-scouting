@@ -1028,6 +1028,35 @@
     background: rgba(255,107,53,0.08);
   }
 
+  /* ---- ALLIANCE COLOR THEMING (Scout form) ---- */
+  .panel { transition: background 0.35s ease, border-color 0.35s ease; }
+
+  #view-scout.alliance-red .panel {
+    background: rgba(255, 58, 58, 0.06);
+    border-color: rgba(255, 58, 58, 0.35);
+  }
+  #view-scout.alliance-red .panel::before {
+    background: linear-gradient(90deg, transparent, rgba(255, 58, 58, 0.55), transparent);
+  }
+  #view-scout.alliance-red .panel-title::before { background: var(--red); }
+  #view-scout.alliance-red .btn-submit {
+    background: linear-gradient(135deg, #cc1a1a, #8b0000);
+    box-shadow: 0 4px 20px rgba(255, 58, 58, 0.25);
+  }
+
+  #view-scout.alliance-blue .panel {
+    background: rgba(30, 111, 255, 0.06);
+    border-color: rgba(30, 111, 255, 0.35);
+  }
+  #view-scout.alliance-blue .panel::before {
+    background: linear-gradient(90deg, transparent, rgba(30, 111, 255, 0.55), transparent);
+  }
+  #view-scout.alliance-blue .panel-title::before { background: #1e6fff; }
+  #view-scout.alliance-blue .btn-submit {
+    background: linear-gradient(135deg, #1040cc, #0a1a99);
+    box-shadow: 0 4px 20px rgba(30, 111, 255, 0.25);
+  }
+
   /* ---- LOGIN OVERLAY ---- */
   .login-overlay {
     position: fixed;
@@ -1150,7 +1179,7 @@
           </div>
           <div class="field-row">
             <label>Alliance Color</label>
-            <select id="allianceColor">
+            <select id="allianceColor" onchange="setAllianceColor(this.value)">
               <option value="">— Select —</option>
               <option value="Red">Red Alliance</option>
               <option value="Blue">Blue Alliance</option>
@@ -1586,6 +1615,13 @@ function saveData(d) {
 // ===========================
 // FORM INTERACTIONS
 // ===========================
+function setAllianceColor(val) {
+  const view = document.getElementById('view-scout');
+  view.classList.remove('alliance-red', 'alliance-blue');
+  if (val === 'Red') view.classList.add('alliance-red');
+  else if (val === 'Blue') view.classList.add('alliance-blue');
+}
+
 function adjust(key, delta) {
   formState[key] = Math.max(0, (formState[key] || 0) + delta);
   document.getElementById(key + '-display').textContent = formState[key];
@@ -1667,6 +1703,7 @@ function resetForm() {
   // Reset inputs
   ['teamNum','matchNum','freeNotes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('allianceColor').value = '';
+  setAllianceColor('');
   document.getElementById('autoStrategy').value = '';
   updatePreview();
 }
