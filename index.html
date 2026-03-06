@@ -1028,9 +1028,90 @@
     background: rgba(255,107,53,0.08);
   }
 
+  /* ---- LOGIN OVERLAY ---- */
+  .login-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .login-box {
+    width: 100%;
+    max-width: 380px;
+  }
+  .login-logo {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: 0.05em;
+    color: var(--text-bright);
+    text-align: center;
+    margin-bottom: 4px;
+  }
+  .login-logo span { color: var(--accent); }
+  .login-sub {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.2em;
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .login-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,212,255,0.08);
+  }
+  .login-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 20px; right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .login-error {
+    color: var(--red);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    margin-bottom: 12px;
+    display: none;
+  }
+
 </style>
 </head>
 <body>
+
+<!-- ===== LOGIN OVERLAY ===== -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">REBUILT<span>.</span>SCOUT</div>
+    <div class="login-sub">FRC 2026 &mdash; TEAM 219 IMPACT</div>
+    <div class="login-panel">
+      <div class="panel-title">Scout Login</div>
+      <div class="field-row">
+        <label>Your Name</label>
+        <input type="text" id="loginName" placeholder="e.g. Alex" autocomplete="name" autocapitalize="words">
+      </div>
+      <div class="field-row">
+        <label>Team Password</label>
+        <input type="password" id="loginPassword" placeholder="••••••••••" autocomplete="current-password">
+      </div>
+      <div class="login-error" id="loginError"></div>
+      <button class="btn-submit" onclick="doLogin()">→ ENTER</button>
+    </div>
+  </div>
+</div>
 
 <header>
   <div>
@@ -1465,6 +1546,36 @@ let selectedAlliance = [null, null, null];
 // ===========================
 // STORAGE
 // ===========================
+// ===========================
+// AUTH
+// ===========================
+const PASSWORD_HASH = '312274c1e4b86e58185e3911b6a2673ff651c798f679a1fb0d9b2082a4bcd0ea';
+
+async function hashString(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function doLogin() {
+  const name = document.getElementById('loginName').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  if (!name) { errEl.textContent = '⚠ Enter your name'; errEl.style.display = 'block'; return; }
+  if (!pass) { errEl.textContent = '⚠ Enter the team password'; errEl.style.display = 'block'; return; }
+  const hash = await hashString(pass);
+  if (hash !== PASSWORD_HASH) {
+    errEl.textContent = '⚠ Incorrect password';
+    errEl.style.display = 'block';
+    document.getElementById('loginPassword').value = '';
+    return;
+  }
+  localStorage.setItem('rebuilt_scoutName', name);
+  sessionStorage.setItem('rebuilt_loggedIn', '1');
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('scoutName').value = name;
+}
+
 function getData() {
   try { return JSON.parse(localStorage.getItem('rebuilt_scout') || '[]'); } catch { return []; }
 }
@@ -2082,9 +2193,26 @@ window.addEventListener('DOMContentLoaded', ()=>{
   setTower('teleopTower', 0);
   updatePreview();
   updateEntryCount();
-  // Persist scout name
-  const savedScout = localStorage.getItem('rebuilt_scoutName');
-  if (savedScout) document.getElementById('scoutName').value = savedScout;
+
+  // Check login session
+  const loggedIn = sessionStorage.getItem('rebuilt_loggedIn');
+  const savedName = localStorage.getItem('rebuilt_scoutName');
+  if (loggedIn && savedName) {
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('scoutName').value = savedName;
+  } else if (savedName) {
+    // Pre-fill name so returning scouts only need to enter the password
+    document.getElementById('loginName').value = savedName;
+  }
+
+  // Submit login on Enter key from either login field
+  ['loginName', 'loginPassword'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') doLogin();
+    });
+  });
+
+  // Persist scout name on change
   document.getElementById('scoutName').addEventListener('change', e=>{
     localStorage.setItem('rebuilt_scoutName', e.target.value);
   });
