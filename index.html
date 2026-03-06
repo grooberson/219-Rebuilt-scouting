@@ -255,7 +255,11 @@
     height: 36px;
     display: flex; align-items: center; justify-content: center;
     min-width: 48px;
+    outline: none;
+    -moz-appearance: textfield;
   }
+  .counter-val::-webkit-inner-spin-button,
+  .counter-val::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
   /* Rating buttons */
   .rating-group {
@@ -1411,7 +1415,7 @@
           </div>
           <div class="field-row">
             <label>Match Number</label>
-            <input type="number" id="matchNum" placeholder="e.g. 12" min="1">
+            <input type="number" id="matchNum" placeholder="e.g. 12" min="1" onchange="checkForExistingEntry()">
           </div>
           <div class="field-row">
             <label>Alliance Color</label>
@@ -1433,7 +1437,7 @@
             <label>Fuel Scored (Auto) <span style="color:var(--text-dim);font-size:0.75em;">1 pt each</span></label>
             <div class="counter-group">
               <div class="counter-btn" onclick="adjust('autoFuel',-1)">−</div>
-              <div class="counter-val" id="autoFuel-display">0</div>
+              <input type="number" class="counter-val" id="autoFuel-display" value="0" min="0" max="999" oninput="setCounter('autoFuel',this)">
               <div class="counter-btn" onclick="adjust('autoFuel',1)">+</div>
             </div>
           </div>
@@ -1516,7 +1520,7 @@
               <label>Fuel Scored (Teleop) <span style="color:var(--text-dim);font-size:0.75em;">1 pt each</span></label>
               <div class="counter-group">
                 <div class="counter-btn" onclick="adjust('teleopFuel',-1)">−</div>
-                <div class="counter-val" id="teleopFuel-display">0</div>
+                <input type="number" class="counter-val" id="teleopFuel-display" value="0" min="0" max="999" oninput="setCounter('teleopFuel',this)">
                 <div class="counter-btn" onclick="adjust('teleopFuel',1)">+</div>
               </div>
             </div>
@@ -1524,7 +1528,7 @@
               <label>Fuel Dropped / Missed</label>
               <div class="counter-group">
                 <div class="counter-btn" onclick="adjust('fuelMissed',-1)">−</div>
-                <div class="counter-val" id="fuelMissed-display">0</div>
+                <input type="number" class="counter-val" id="fuelMissed-display" value="0" min="0" max="999" oninput="setCounter('fuelMissed',this)">
                 <div class="counter-btn" onclick="adjust('fuelMissed',1)">+</div>
               </div>
             </div>
@@ -1980,6 +1984,7 @@ function scoutFromSchedule(teamNum, matchNum, alliance) {
   document.getElementById('matchNum').value = matchNum;
   document.getElementById('allianceColor').value = alliance;
   setAllianceColor(alliance);
+  loadExistingEntry(teamNum, matchNum);
   showToast(`Scouting T${teamNum} — Match ${matchNum} — ${alliance}`);
   window.scrollTo(0, 0);
 }
@@ -2079,6 +2084,7 @@ function selectTeam(num, name) {
   document.getElementById('teamBadgeNum').textContent = '#' + num;
   document.getElementById('teamBadgeName').textContent = name;
   document.getElementById('teamBadge').classList.add('visible');
+  checkForExistingEntry();
 }
 
 function clearTeamSelection() {
@@ -2086,6 +2092,77 @@ function clearTeamSelection() {
   document.getElementById('teamAcInput').value = '';
   document.getElementById('teamDropdown').classList.remove('open');
   document.getElementById('teamBadge').classList.remove('visible');
+  editingEntryId = null;
+}
+
+function checkForExistingEntry() {
+  const teamNum = parseInt(document.getElementById('teamNum').value);
+  const matchNum = parseInt(document.getElementById('matchNum').value);
+  if (teamNum > 0 && matchNum > 0) loadExistingEntry(teamNum, matchNum);
+}
+
+function loadExistingEntry(teamNum, matchNum) {
+  const data = getData();
+  const existing = data.find(e => e.teamNum === teamNum && e.matchNum === matchNum);
+  if (!existing) { editingEntryId = null; return; }
+
+  editingEntryId = existing.id;
+
+  // Restore numeric formState
+  formState.autoFuel = existing.autoFuel || 0;
+  formState.teleopFuel = existing.teleopFuel || 0;
+  formState.fuelMissed = existing.fuelMissed || 0;
+  formState.autoTower = existing.autoTower || 0;
+  formState.teleopTower = existing.teleopTower || 0;
+  formState.driving = existing.driving || 0;
+  formState.defense = existing.defense || 0;
+  formState.reliability = existing.reliability || 0;
+
+  // Restore boolean formState
+  ['autoMoved','hubAware','scoredInactive','srcDepot','srcOutpost','srcNeutral',
+   'climbFast','climbFailed','climbAssisted','playedDefense','wasPinned','pinnedOpponent','gotCard',
+   'strFuelVolume','strClimber','strConsistentAuto','strDefense','strHubAware','strIntake',
+   'wkScoredWrong','wkBroke','wkSlowIntake','wkNoClimb','wkLooseFuel'
+  ].forEach(k => { formState[k] = !!existing[k]; });
+
+  // Update counter displays
+  ['autoFuel','teleopFuel','fuelMissed'].forEach(k => {
+    const el = document.getElementById(k + '-display');
+    if (el) el.value = formState[k];
+  });
+
+  // Tower selectors
+  setTower('autoTower', formState.autoTower);
+  setTower('teleopTower', formState.teleopTower);
+
+  // Ratings
+  setRating('driving', formState.driving);
+  setRating('defense', formState.defense);
+  setRating('reliability', formState.reliability);
+
+  // Chips
+  const orangeKeys = new Set(['scoredInactive','climbFailed','playedDefense','wasPinned',
+    'pinnedOpponent','gotCard','wkScoredWrong','wkBroke','wkSlowIntake','wkNoClimb','wkLooseFuel']);
+  document.querySelectorAll('.toggle-chip[data-key]').forEach(chip => {
+    const key = chip.dataset.key;
+    chip.classList.remove('active', 'active-orange');
+    if (formState[key]) chip.classList.add(orangeKeys.has(key) ? 'active-orange' : 'active');
+  });
+
+  // Text fields
+  const autoStratEl = document.getElementById('autoStrategy');
+  if (autoStratEl) autoStratEl.value = existing.autoStrategy || '';
+  const notesEl = document.getElementById('freeNotes');
+  if (notesEl) notesEl.value = existing.notes || '';
+
+  // Alliance color (only if not already set by scoutFromSchedule)
+  if (existing.alliance && !document.getElementById('allianceColor').value) {
+    document.getElementById('allianceColor').value = existing.alliance;
+    setAllianceColor(existing.alliance);
+  }
+
+  updatePreview();
+  showToast(`↩ Loaded existing entry — Team ${teamNum} Match ${matchNum}`);
 }
 
 document.addEventListener('click', function(e) {
@@ -2120,6 +2197,7 @@ let formState = {
 let sortKey = 'avgScore';
 let sortAsc = false;
 let selectedAlliance = [null, null, null];
+let editingEntryId = null;
 
 // ===========================
 // STORAGE
@@ -2172,8 +2250,14 @@ function setAllianceColor(val) {
 }
 
 function adjust(key, delta) {
-  formState[key] = Math.max(0, (formState[key] || 0) + delta);
-  document.getElementById(key + '-display').textContent = formState[key];
+  formState[key] = Math.min(999, Math.max(0, (formState[key] || 0) + delta));
+  document.getElementById(key + '-display').value = formState[key];
+  updatePreview();
+}
+
+function setCounter(key, input) {
+  const v = parseInt(input.value, 10);
+  formState[key] = isNaN(v) ? 0 : Math.min(999, Math.max(0, v));
   updatePreview();
 }
 
@@ -2236,7 +2320,7 @@ function resetForm() {
   };
   // Reset counters
   ['autoFuel','teleopFuel','fuelMissed'].forEach(k => {
-    document.getElementById(k+'-display').textContent = 0;
+    document.getElementById(k+'-display').value = 0;
   });
   // Reset tower buttons
   [0,1].forEach(i => { const el=document.getElementById('autoTower-'+i); if(el){el.classList.remove('active');}});
@@ -2255,6 +2339,7 @@ function resetForm() {
   document.getElementById('allianceColor').value = '';
   setAllianceColor('');
   document.getElementById('autoStrategy').value = '';
+  editingEntryId = null;
   updatePreview();
 }
 
@@ -2316,10 +2401,17 @@ function submitEntry() {
   };
 
   const data = getData();
-  data.push(entry);
+  const existingIdx = data.findIndex(e => e.teamNum === teamNum && e.matchNum === matchNum);
+  if (existingIdx >= 0) {
+    entry.id = data[existingIdx].id; // preserve original id
+    data[existingIdx] = entry;
+  } else {
+    data.push(entry);
+  }
   saveData(data);
+  editingEntryId = null;
   updateEntryCount();
-  showToast('✓ Entry saved — Team ' + teamNum);
+  showToast(existingIdx >= 0 ? `✓ Entry updated — Team ${teamNum} Match ${matchNum}` : '✓ Entry saved — Team ' + teamNum);
   resetForm();
 }
 
