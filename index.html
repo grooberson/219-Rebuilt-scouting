@@ -1145,6 +1145,142 @@
   }
   .team-badge-clear:hover { color: var(--red); }
 
+  /* ---- SCHEDULE VIEW ---- */
+  .sched-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .sched-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--text-bright);
+  }
+  .sched-meta {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    text-align: right;
+    line-height: 1.6;
+  }
+  .sched-section-title {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 10px 0 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+  }
+  .match-block {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    position: relative;
+  }
+  .match-block.completed { opacity: 0.72; }
+  .match-block-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+  .match-block-num {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+  .match-time-badge {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+  }
+  .match-score-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+  }
+  .match-score-val {
+    font-weight: 700;
+    font-size: 1rem;
+  }
+  .match-score-val.red-score { color: #ff5555; }
+  .match-score-val.blue-score { color: #5588ff; }
+  .match-score-val.winner { font-size: 1.1rem; color: var(--text-bright); }
+  .match-score-sep { color: var(--text-dim); font-size: 0.75rem; }
+  .match-teams-grid {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .match-alliance {
+    display: flex;
+    gap: 6px;
+  }
+  .team-pill {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 4px;
+    border-radius: 6px;
+    border: 1px solid;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s, border-color 0.15s;
+    background: transparent;
+    font-family: var(--font-ui);
+    min-width: 0;
+  }
+  .team-pill.red { border-color: rgba(255,85,85,0.3); }
+  .team-pill.red:hover { background: rgba(255,85,85,0.12); border-color: #ff5555; }
+  .team-pill.blue { border-color: rgba(85,136,255,0.3); }
+  .team-pill.blue:hover { background: rgba(85,136,255,0.12); border-color: #5588ff; }
+  .pill-num {
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .team-pill.red .pill-num { color: #ff5555; }
+  .team-pill.blue .pill-num { color: #5588ff; }
+  .pill-name {
+    font-size: 0.66rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    line-height: 1.4;
+    margin-top: 2px;
+  }
+  /* Official rank sub-label in teams table */
+  .off-rank {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--gold);
+    margin-top: 2px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  @media (max-width: 600px) {
+    .pill-name { display: none; }
+    .team-pill { padding: 10px 4px; }
+  }
+
   /* ---- LOGIN OVERLAY ---- */
   .login-overlay {
     position: fixed;
@@ -1243,6 +1379,7 @@
 
 <nav class="nav-tabs">
   <div class="nav-tab active" onclick="showView('scout')">⊕ Scout Match</div>
+  <div class="nav-tab" onclick="showView('schedule')">◉ Schedule</div>
   <div class="nav-tab" onclick="showView('teams')">⊞ Team Rankings</div>
   <div class="nav-tab" onclick="showView('alliance')">⬡ Alliance Picker</div>
 </nav>
@@ -1261,7 +1398,7 @@
             <label>Team Number</label>
             <input type="hidden" id="teamNum">
             <div class="team-ac-wrap">
-              <input type="text" id="teamSearch" placeholder="Type # or team name…" autocomplete="off"
+              <input type="text" id="teamAcInput" placeholder="Type # or team name…" autocomplete="off"
                 oninput="teamAcFilter()" onfocus="teamAcFilter()" onkeydown="teamAcKey(event)">
               <div class="team-dropdown" id="teamDropdown"></div>
             </div>
@@ -1627,7 +1764,43 @@
     </div>
   </div>
 
+  <!-- ===== SCHEDULE VIEW ===== -->
+  <div class="view" id="view-schedule">
+    <div style="max-width:900px;margin:0 auto;">
+      <div class="sched-header">
+        <div class="sched-title">Match Schedule — NJWAS 2026</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="sched-meta">
+            <div id="schedStatus">—</div>
+            <div id="schedCountdown"></div>
+          </div>
+          <button class="btn-sm" onclick="loadSchedule()">↺ Refresh</button>
+        </div>
+      </div>
+      <div id="scheduleList">
+        <div class="empty-state">
+          <div style="font-family:var(--font-display);font-size:1.1rem;color:var(--text);">Loading schedule…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
+
+<footer style="
+  position: relative; z-index: 1;
+  text-align: center;
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+">
+  Event data provided by <a href="https://frc-events.firstinspires.org/services/API"
+    target="_blank"
+    style="color: var(--text-dim); text-decoration: underline;">FIRST</a>
+</footer>
 
 <!-- TEAM DETAIL MODAL -->
 <div class="modal-overlay" id="teamModal">
@@ -1644,6 +1817,173 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ===========================
+// FRC API — CREDENTIALS
+// ===========================
+// Credentials are XOR-obfuscated with key REBUILT-2026-FMA-NJWAS-219
+const _K = 'REBUILT-2026-FMA-NJWAS-219';
+const _C = '353772652b29265e5d5e0007147c757119772e3177370005005f616876307b2a79150a02001b1d7729204e2c2965736a1454';
+function _getAuth() {
+  const dec = _C.match(/.{2}/g).map((h, i) =>
+    String.fromCharCode(parseInt(h, 16) ^ _K.charCodeAt(i % _K.length))
+  ).join('');
+  return 'Basic ' + btoa(dec);
+}
+const FRC_BASE = 'https://frc-api.firstinspires.org/v3.0';
+const FRC_YEAR = '2026';
+const FRC_EVENT = 'NJWAS';
+
+// ===========================
+// OFFICIAL RANKINGS
+// ===========================
+let officialRankings = {};  // teamNumber → ranking object
+let _rankLastLoad = 0;
+
+async function loadOfficialRankings() {
+  const now = Date.now();
+  if (now - _rankLastLoad < 30000) return; // throttle to 30 s
+  _rankLastLoad = now;
+  try {
+    const res = await fetch(`${FRC_BASE}/${FRC_YEAR}/rankings/${FRC_EVENT}`, {
+      headers: { 'Authorization': _getAuth(), 'Accept': 'application/json' }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    officialRankings = {};
+    (data.Rankings || []).forEach(r => { officialRankings[r.teamNumber] = r; });
+    renderTeams(); // refresh table with official rank data
+  } catch (e) {
+    console.warn('FRC API rankings unavailable:', e);
+  }
+}
+
+// ===========================
+// SCHEDULE VIEW
+// ===========================
+let scheduleData = [];
+let _schedRefreshTimer = null;
+let _schedCountdown = 0;
+
+// Populated once EVENT_ROSTER is defined (see initRosterMap)
+const ROSTER_MAP = {};
+
+async function loadSchedule(isAutoRefresh = false) {
+  if (!isAutoRefresh) {
+    document.getElementById('schedStatus').textContent = 'Loading…';
+    document.getElementById('schedCountdown').textContent = '';
+  }
+  clearInterval(_schedRefreshTimer);
+  try {
+    const res = await fetch(`${FRC_BASE}/${FRC_YEAR}/schedule/${FRC_EVENT}/qual/hybrid`, {
+      headers: { 'Authorization': _getAuth(), 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    scheduleData = data.Schedule || [];
+    renderSchedule();
+    document.getElementById('schedStatus').textContent =
+      'Updated ' + new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+  } catch (e) {
+    document.getElementById('schedStatus').textContent = '⚠ FRC API unavailable';
+    console.warn('FRC schedule fetch failed:', e);
+  }
+  // Start 60-second auto-refresh countdown
+  _schedCountdown = 60;
+  _schedRefreshTimer = setInterval(() => {
+    _schedCountdown--;
+    const el = document.getElementById('schedCountdown');
+    if (el) el.textContent = `Refresh in ${_schedCountdown}s`;
+    if (_schedCountdown <= 0) {
+      clearInterval(_schedRefreshTimer);
+      loadSchedule(true);
+    }
+  }, 1000);
+}
+
+function renderSchedule() {
+  const container = document.getElementById('scheduleList');
+  if (!container) return;
+  if (!scheduleData.length) {
+    container.innerHTML = `<div class="empty-state">
+      <div style="font-size:2rem;margin-bottom:12px;">📋</div>
+      <div style="font-family:var(--font-display);font-size:1.1rem;color:var(--text);">Schedule not yet published</div>
+      <div style="color:var(--text-dim);margin-top:8px;font-size:0.85rem;">Check back when the event begins</div>
+    </div>`;
+    return;
+  }
+  const completed = scheduleData.filter(m => m.postResultTime && m.scoreRedFinal !== null && m.scoreRedFinal !== undefined);
+  const upcoming  = scheduleData.filter(m => !m.postResultTime || m.scoreRedFinal === null || m.scoreRedFinal === undefined);
+  let html = '';
+  if (upcoming.length) {
+    html += `<div class="sched-section-title">Upcoming — ${upcoming.length} match${upcoming.length !== 1 ? 'es' : ''}</div>`;
+    html += upcoming.map(m => renderMatchBlock(m, false)).join('');
+  }
+  if (completed.length) {
+    html += `<div class="sched-section-title">Completed — ${completed.length} match${completed.length !== 1 ? 'es' : ''}</div>`;
+    html += [...completed].reverse().map(m => renderMatchBlock(m, true)).join('');
+  }
+  container.innerHTML = html;
+}
+
+function renderMatchBlock(match, isCompleted) {
+  const red  = match.teams.filter(t => t.station.startsWith('Red'));
+  const blue = match.teams.filter(t => t.station.startsWith('Blue'));
+  const timeStr = new Date(match.startTime).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+
+  let headerRight;
+  if (isCompleted) {
+    const rWon = match.scoreRedFinal > match.scoreBlueFinal;
+    const bWon = match.scoreBlueFinal > match.scoreRedFinal;
+    headerRight = `<div class="match-score-row">
+      <span class="match-score-val red-score ${rWon ? 'winner' : ''}">${match.scoreRedFinal}</span>
+      <span class="match-score-sep">–</span>
+      <span class="match-score-val blue-score ${bWon ? 'winner' : ''}">${match.scoreBlueFinal}</span>
+    </div>`;
+  } else {
+    headerRight = `<span class="match-time-badge">${timeStr}</span>`;
+  }
+
+  const makePills = (teams, color) => teams.map(t => {
+    const info = ROSTER_MAP[t.teamNumber];
+    const name = info ? info.name : '';
+    const shortName = name.length > 13 ? name.slice(0, 12) + '…' : name;
+    const allianceVal = color === 'red' ? 'Red' : 'Blue';
+    return `<button class="team-pill ${color}"
+        onclick="scoutFromSchedule(${t.teamNumber},${match.matchNumber},'${allianceVal}')">
+      <span class="pill-num">${t.teamNumber}</span>
+      <span class="pill-name">${shortName}</span>
+    </button>`;
+  }).join('');
+
+  return `<div class="match-block ${isCompleted ? 'completed' : 'upcoming'}">
+    <div class="match-block-header">
+      <span class="match-block-num">Q${match.matchNumber}</span>
+      ${headerRight}
+    </div>
+    <div class="match-teams-grid">
+      <div class="match-alliance">${makePills(red, 'red')}</div>
+      <div class="match-alliance">${makePills(blue, 'blue')}</div>
+    </div>
+  </div>`;
+}
+
+function scoutFromSchedule(teamNum, matchNum, alliance) {
+  const info = ROSTER_MAP[teamNum];
+  const teamName = info ? info.name : '';
+  // Switch to scout tab
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-scout').classList.add('active');
+  document.querySelector('[onclick="showView(\'scout\')"]').classList.add('active');
+  // Pre-fill the form
+  selectTeam(teamNum, teamName);
+  document.getElementById('matchNum').value = matchNum;
+  document.getElementById('allianceColor').value = alliance;
+  setAllianceColor(alliance);
+  showToast(`Scouting T${teamNum} — Match ${matchNum} — ${alliance}`);
+  window.scrollTo(0, 0);
+}
+
 // ===========================
 // EVENT ROSTER — NJWAS 2026
 // ===========================
@@ -1687,7 +2027,7 @@ function teamAvatar(num) {
 let teamAcHighlight = -1;
 
 function teamAcFilter() {
-  const q = document.getElementById('teamSearch').value.trim().toLowerCase();
+  const q = document.getElementById('teamAcInput').value.trim().toLowerCase();
   const dd = document.getElementById('teamDropdown');
   const matches = q
     ? EVENT_ROSTER.filter(t => String(t.num).startsWith(q) || t.name.toLowerCase().includes(q))
@@ -1731,7 +2071,7 @@ function teamAcKey(e) {
 
 function selectTeam(num, name) {
   document.getElementById('teamNum').value = num;
-  document.getElementById('teamSearch').value = '';
+  document.getElementById('teamAcInput').value = '';
   document.getElementById('teamDropdown').classList.remove('open');
   const avatar = document.getElementById('teamBadgeAvatar');
   avatar.src = teamAvatar(num);
@@ -1743,7 +2083,7 @@ function selectTeam(num, name) {
 
 function clearTeamSelection() {
   document.getElementById('teamNum').value = '';
-  document.getElementById('teamSearch').value = '';
+  document.getElementById('teamAcInput').value = '';
   document.getElementById('teamDropdown').classList.remove('open');
   document.getElementById('teamBadge').classList.remove('visible');
 }
@@ -2085,8 +2425,12 @@ function renderTeams() {
 
     const lastNote = t.entries.slice(-1)[0]?.notes || '—';
 
+    const or = officialRankings[t.teamNum];
+    const rankBadge = or
+      ? `<div class="off-rank">#${or.rank} · ${or.wins}W-${or.losses}L</div>`
+      : '';
     tr.innerHTML = `
-      <td class="team-num">${t.teamNum}</td>
+      <td class="team-num">${t.teamNum}${rankBadge}</td>
       <td style="font-family:var(--font-mono);color:var(--text-dim)">${t.matches}</td>
       <td class="score-cell">${t.avgScore}</td>
       <td style="font-family:var(--font-mono)">${t.avgFuel}</td>
@@ -2413,7 +2757,8 @@ function showView(name) {
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
   event.currentTarget.classList.add('active');
-  if (name==='teams') renderTeams();
+  if (name==='schedule') loadSchedule();
+  if (name==='teams') { renderTeams(); loadOfficialRankings(); }
   if (name==='alliance') renderAlliance();
 }
 
@@ -2435,11 +2780,17 @@ function showToast(msg) {
 // ===========================
 // INIT
 // ===========================
+function initRosterMap() {
+  EVENT_ROSTER.forEach(t => { ROSTER_MAP[t.num] = t; });
+}
+
 window.addEventListener('DOMContentLoaded', ()=>{
+  initRosterMap();
   setTower('autoTower', 0);
   setTower('teleopTower', 0);
   updatePreview();
   updateEntryCount();
+  loadOfficialRankings(); // pre-load so rankings tab shows data immediately
 
   // Check login session
   const loggedIn = sessionStorage.getItem('rebuilt_loggedIn');
