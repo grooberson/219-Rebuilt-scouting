@@ -1260,6 +1260,9 @@
       <div class="teams-controls">
         <input class="search-box" type="text" id="teamSearch" placeholder="Search team #..." oninput="renderTeams()">
         <button class="btn-sm" onclick="exportCSV()">↓ Export CSV</button>
+        <button class="btn-sm" onclick="exportJSON()">↓ Export JSON</button>
+        <button class="btn-sm" onclick="document.getElementById('importFile').click()">↑ Import JSON</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(this)">
         <button class="btn-sm danger" onclick="clearAll()">✕ Clear All Data</button>
       </div>
     </div>
@@ -1724,7 +1727,10 @@ function openTeamModal(teamNum) {
       <div class="match-entry">
         <div class="match-entry-header">
           <span>Match ${e.matchNum} — ${e.alliance||'?'} Alliance</span>
-          <span class="match-score">${e.score} pts</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="match-score">${e.score} pts</span>
+            <button class="btn-sm danger" style="padding:2px 8px;font-size:0.7rem;" onclick="deleteEntry(${e.id},${teamNum})">✕</button>
+          </div>
         </div>
         <div class="match-stats-grid">
           <div class="ms"><span class="ms-l">Auto Fuel</span><span class="ms-v">${e.autoFuel}</span></div>
@@ -1922,6 +1928,57 @@ function exportCSV() {
   a.download = `rebuilt_scout_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
   showToast('CSV exported!');
+}
+
+function exportJSON() {
+  const data = getData();
+  if (!data.length) { showToast('No data to export'); return; }
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `rebuilt_scout_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  showToast('JSON exported!');
+}
+
+function importJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!Array.isArray(imported)) { showToast('⚠ Invalid file — expected JSON array'); return; }
+      const existing = getData();
+      const existingIds = new Set(existing.map(e => e.id));
+      const newEntries = imported.filter(e => e.teamNum && e.matchNum && !existingIds.has(e.id));
+      if (!newEntries.length) { showToast('No new entries to merge'); return; }
+      saveData([...existing, ...newEntries]);
+      renderTeams();
+      renderAlliance();
+      updateEntryCount();
+      showToast(`✓ Merged ${newEntries.length} new entr${newEntries.length===1?'y':'ies'}`);
+    } catch {
+      showToast('⚠ Could not parse file');
+    } finally {
+      input.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function deleteEntry(entryId, teamNum) {
+  if (!confirm('Delete this match entry?')) return;
+  const data = getData().filter(e => e.id !== entryId);
+  saveData(data);
+  renderTeams();
+  renderAlliance();
+  updateEntryCount();
+  // Refresh modal — close if no entries left for this team, else re-open
+  const remaining = data.filter(e => e.teamNum === teamNum);
+  if (remaining.length) openTeamModal(teamNum);
+  else closeModal();
+  showToast('Entry deleted');
 }
 
 function clearAll() {
