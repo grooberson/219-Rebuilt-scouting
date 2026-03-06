@@ -1057,6 +1057,94 @@
     box-shadow: 0 4px 20px rgba(30, 111, 255, 0.25);
   }
 
+  /* ---- TEAM AUTOCOMPLETE ---- */
+  .team-ac-wrap { position: relative; }
+  .team-dropdown {
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    background: var(--panel);
+    border: 1px solid var(--border-bright);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 100;
+    display: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .team-dropdown.open { display: block; }
+  .team-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+  }
+  .team-dropdown-item:last-child { border-bottom: none; }
+  .team-dropdown-item:hover, .team-dropdown-item.highlighted { background: var(--bg3); }
+  .team-dropdown-avatar {
+    width: 24px; height: 24px;
+    border-radius: 3px;
+    object-fit: contain;
+    flex-shrink: 0;
+    background: var(--bg3);
+  }
+  .team-dropdown-num {
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    color: var(--accent);
+    font-weight: 600;
+    min-width: 44px;
+  }
+  .team-dropdown-name {
+    font-size: 0.85rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .team-badge {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(0,212,255,0.05);
+    border: 1px solid var(--border-bright);
+    border-radius: 6px;
+    margin-top: 7px;
+  }
+  .team-badge.visible { display: flex; }
+  .team-badge-avatar {
+    width: 32px; height: 32px;
+    border-radius: 4px;
+    object-fit: contain;
+    flex-shrink: 0;
+    background: var(--bg2);
+  }
+  .team-badge-num {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .team-badge-name {
+    font-size: 0.88rem;
+    color: var(--text);
+    flex: 1;
+  }
+  .team-badge-clear {
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .team-badge-clear:hover { color: var(--red); }
+
   /* ---- LOGIN OVERLAY ---- */
   .login-overlay {
     position: fixed;
@@ -1171,7 +1259,18 @@
           <div class="panel-title">Match Info</div>
           <div class="field-row">
             <label>Team Number</label>
-            <input type="number" id="teamNum" placeholder="e.g. 1234" min="1" max="99999">
+            <input type="hidden" id="teamNum">
+            <div class="team-ac-wrap">
+              <input type="text" id="teamSearch" placeholder="Type # or team name…" autocomplete="off"
+                oninput="teamAcFilter()" onfocus="teamAcFilter()" onkeydown="teamAcKey(event)">
+              <div class="team-dropdown" id="teamDropdown"></div>
+            </div>
+            <div class="team-badge" id="teamBadge">
+              <img class="team-badge-avatar" id="teamBadgeAvatar" src="" alt="" onerror="this.style.display='none'">
+              <span class="team-badge-num" id="teamBadgeNum"></span>
+              <span class="team-badge-name" id="teamBadgeName"></span>
+              <span class="team-badge-clear" onclick="clearTeamSelection()" title="Clear selection">✕</span>
+            </div>
           </div>
           <div class="field-row">
             <label>Match Number</label>
@@ -1546,6 +1645,116 @@
 
 <script>
 // ===========================
+// EVENT ROSTER — NJWAS 2026
+// ===========================
+const EVENT_ROSTER = [
+  { num: 11,    name: 'MORT' },
+  { num: 41,    name: 'RoboWarriors' },
+  { num: 193,   name: 'MORT Beta' },
+  { num: 219,   name: 'Team Impact' },
+  { num: 222,   name: 'Tigertrons' },
+  { num: 223,   name: 'Xtreme Heat' },
+  { num: 316,   name: 'LUNATECS' },
+  { num: 555,   name: 'Montclair Robotics' },
+  { num: 752,   name: 'Chargers' },
+  { num: 1279,  name: 'Cold Fusion' },
+  { num: 1672,  name: 'Robo T-Birds' },
+  { num: 1676,  name: 'The Pascack PI-oneers' },
+  { num: 1811,  name: 'FRESH' },
+  { num: 3142,  name: 'Aperture' },
+  { num: 3637,  name: 'The Daleks' },
+  { num: 4285,  name: 'Camo-Bots' },
+  { num: 4361,  name: 'Roxbotix' },
+  { num: 5895,  name: 'Peddie Robotics' },
+  { num: 5992,  name: 'Pirates' },
+  { num: 6016,  name: 'Tiger Robotics' },
+  { num: 6945,  name: 'Children of the Corn' },
+  { num: 8117,  name: 'Easton RoboRovers' },
+  { num: 8513,  name: 'Sisters 1st' },
+  { num: 8706,  name: 'MXS Bulldog Bots' },
+  { num: 8707,  name: 'The Newark Circuit Breakers' },
+  { num: 8771,  name: 'PioTech' },
+  { num: 9015,  name: 'Questionable Engineering' },
+  { num: 9116,  name: 'The Canucks & Bolts' },
+  { num: 10600, name: 'Two Steps Ahead' },
+  { num: 10995, name: 'ACS Eagle Robotics' },
+];
+
+function teamAvatar(num) {
+  return `https://www.thebluealliance.com/avatar/2026/frc${num}.png`;
+}
+
+let teamAcHighlight = -1;
+
+function teamAcFilter() {
+  const q = document.getElementById('teamSearch').value.trim().toLowerCase();
+  const dd = document.getElementById('teamDropdown');
+  const matches = q
+    ? EVENT_ROSTER.filter(t => String(t.num).startsWith(q) || t.name.toLowerCase().includes(q))
+    : EVENT_ROSTER;
+  if (!matches.length) { dd.innerHTML = ''; dd.classList.remove('open'); return; }
+  teamAcHighlight = -1;
+  dd.innerHTML = matches.map(t => {
+    const safeName = t.name.replace(/'/g, "\\'");
+    return `<div class="team-dropdown-item" data-num="${t.num}" data-name="${t.name}"
+        onmousedown="selectTeam(${t.num},'${safeName}')">
+      <img class="team-dropdown-avatar" src="${teamAvatar(t.num)}" alt="" onerror="this.style.display='none'">
+      <span class="team-dropdown-num">${t.num}</span>
+      <span class="team-dropdown-name">${t.name}</span>
+    </div>`;
+  }).join('');
+  dd.classList.add('open');
+}
+
+function teamAcKey(e) {
+  const dd = document.getElementById('teamDropdown');
+  const items = dd.querySelectorAll('.team-dropdown-item');
+  if (!items.length) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    teamAcHighlight = Math.min(teamAcHighlight + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('highlighted', i === teamAcHighlight));
+    items[teamAcHighlight]?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    teamAcHighlight = Math.max(teamAcHighlight - 1, 0);
+    items.forEach((el, i) => el.classList.toggle('highlighted', i === teamAcHighlight));
+    items[teamAcHighlight]?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter' && teamAcHighlight >= 0) {
+    e.preventDefault();
+    const el = items[teamAcHighlight];
+    selectTeam(parseInt(el.dataset.num), el.dataset.name);
+  } else if (e.key === 'Escape') {
+    dd.classList.remove('open');
+  }
+}
+
+function selectTeam(num, name) {
+  document.getElementById('teamNum').value = num;
+  document.getElementById('teamSearch').value = '';
+  document.getElementById('teamDropdown').classList.remove('open');
+  const avatar = document.getElementById('teamBadgeAvatar');
+  avatar.src = teamAvatar(num);
+  avatar.style.display = '';
+  document.getElementById('teamBadgeNum').textContent = '#' + num;
+  document.getElementById('teamBadgeName').textContent = name;
+  document.getElementById('teamBadge').classList.add('visible');
+}
+
+function clearTeamSelection() {
+  document.getElementById('teamNum').value = '';
+  document.getElementById('teamSearch').value = '';
+  document.getElementById('teamDropdown').classList.remove('open');
+  document.getElementById('teamBadge').classList.remove('visible');
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.team-ac-wrap')) {
+    document.getElementById('teamDropdown')?.classList.remove('open');
+  }
+});
+
+// ===========================
 // STATE
 // ===========================
 let formState = {
@@ -1701,7 +1910,8 @@ function resetForm() {
   // Reset chips
   document.querySelectorAll('.toggle-chip').forEach(c => { c.classList.remove('active','active-orange'); });
   // Reset inputs
-  ['teamNum','matchNum','freeNotes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  clearTeamSelection();
+  ['matchNum','freeNotes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('allianceColor').value = '';
   setAllianceColor('');
   document.getElementById('autoStrategy').value = '';
