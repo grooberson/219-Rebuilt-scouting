@@ -1344,6 +1344,80 @@
     margin-bottom: 12px;
     display: none;
   }
+  .btn-view-only {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--border-bright);
+    border-radius: 6px;
+    color: var(--text-dim);
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-view-only:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ---- READ-ONLY MODE ---- */
+  .readonly-badge {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+  }
+  .readonly-badge .ro-label {
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: 4px;
+    padding: 2px 8px;
+    letter-spacing: 0.12em;
+  }
+  .readonly-badge .ro-login-btn {
+    color: var(--accent);
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    text-decoration: underline;
+    background: none;
+    border: none;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+  }
+  .readonly-badge .ro-login-btn:hover { color: var(--text-bright); }
+  body.read-only .readonly-badge { display: flex; }
+
+  /* Disable all scout form interactions in read-only mode except team/match */
+  body.read-only #view-scout .counter-btn,
+  body.read-only #view-scout .tower-btn,
+  body.read-only #view-scout .toggle-chip,
+  body.read-only #view-scout select,
+  body.read-only #view-scout textarea,
+  body.read-only #view-scout input:not(#teamAcInput):not(#matchNum) {
+    pointer-events: none;
+    opacity: 0.55;
+  }
+  body.read-only #view-scout .btn-submit { display: none; }
+  body.read-only #view-scout .team-badge-clear { pointer-events: none; opacity: 0.3; }
+
+  /* Dim the scout name + alliance rows (still visible for loaded data) */
+  body.read-only #view-scout #allianceColor { pointer-events: none; opacity: 0.55; }
+
+  .readonly-notice {
+    display: none;
+    background: rgba(255, 215, 0, 0.07);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--gold);
+    margin-bottom: 14px;
+    letter-spacing: 0.06em;
+  }
+  body.read-only .readonly-notice { display: block; }
 
 </style>
 </head>
@@ -1366,6 +1440,7 @@
       </div>
       <div class="login-error" id="loginError"></div>
       <button class="btn-submit" onclick="doLogin()">→ ENTER</button>
+      <button class="btn-view-only" onclick="doViewOnly()">◎ VIEW ONLY (no login)</button>
     </div>
   </div>
 </div>
@@ -1374,6 +1449,10 @@
   <div>
     <div class="logo">REBUILT<span>.</span>SCOUT</div>
     <div class="logo-sub">FRC 2026 — ALLIANCE SELECTION TOOL</div>
+  </div>
+  <div class="readonly-badge">
+    <span class="ro-label">READ-ONLY</span>
+    <button class="ro-login-btn" onclick="showLoginOverlay()">→ Scout Login</button>
   </div>
   <div class="header-status">
     <div><span class="status-dot"></span>LOCAL STORAGE ACTIVE</div>
@@ -1392,6 +1471,7 @@
 
   <!-- ===== SCOUT VIEW ===== -->
   <div class="view active" id="view-scout">
+    <div class="readonly-notice">◎ READ-ONLY MODE — Select a team and match to view scouted data. Login to enter or edit entries.</div>
     <div class="form-grid">
 
       <!-- LEFT COLUMN -->
@@ -2198,6 +2278,7 @@ let sortKey = 'avgScore';
 let sortAsc = false;
 let selectedAlliance = [null, null, null];
 let editingEntryId = null;
+let readOnly = false;
 
 // ===========================
 // STORAGE
@@ -2228,8 +2309,22 @@ async function doLogin() {
   }
   localStorage.setItem('rebuilt_scoutName', name);
   sessionStorage.setItem('rebuilt_loggedIn', '1');
+  sessionStorage.removeItem('rebuilt_readOnly');
+  readOnly = false;
+  document.body.classList.remove('read-only');
   document.getElementById('loginOverlay').style.display = 'none';
   document.getElementById('scoutName').value = name;
+}
+
+function doViewOnly() {
+  sessionStorage.setItem('rebuilt_readOnly', '1');
+  readOnly = true;
+  document.body.classList.add('read-only');
+  document.getElementById('loginOverlay').style.display = 'none';
+}
+
+function showLoginOverlay() {
+  document.getElementById('loginOverlay').style.display = 'flex';
 }
 
 function getData() {
@@ -2347,6 +2442,7 @@ function resetForm() {
 // SUBMIT
 // ===========================
 function submitEntry() {
+  if (readOnly) { showToast('⚠ Read-only mode — login to save entries'); return; }
   const teamNum = parseInt(document.getElementById('teamNum').value);
   const matchNum = parseInt(document.getElementById('matchNum').value);
   if (!teamNum || teamNum < 1) { showToast('⚠ Enter a valid team number'); return; }
@@ -2887,9 +2983,14 @@ window.addEventListener('DOMContentLoaded', ()=>{
   // Check login session
   const loggedIn = sessionStorage.getItem('rebuilt_loggedIn');
   const savedName = localStorage.getItem('rebuilt_scoutName');
+  const savedReadOnly = sessionStorage.getItem('rebuilt_readOnly');
   if (loggedIn && savedName) {
     document.getElementById('loginOverlay').style.display = 'none';
     document.getElementById('scoutName').value = savedName;
+  } else if (savedReadOnly) {
+    readOnly = true;
+    document.body.classList.add('read-only');
+    document.getElementById('loginOverlay').style.display = 'none';
   } else if (savedName) {
     // Pre-fill name so returning scouts only need to enter the password
     document.getElementById('loginName').value = savedName;
