@@ -123,9 +123,9 @@ function renderScoreBreakdown(red, blue) {
       <span class="sb-hdr red-col">RED</span>
       <span class="sb-hdr blue-col">BLUE</span>
     </div>
-    ${row('Auto', red?.autoPoints, blue?.autoPoints)}
-    ${row('Teleop', red?.teleopPoints, blue?.teleopPoints)}
-    ${row('Endgame', red?.endgamePoints, blue?.endgamePoints)}
+    ${row('Auto', red?.totalAutoPoints, blue?.totalAutoPoints)}
+    ${row('Teleop', red?.totalTeleopPoints, blue?.totalTeleopPoints)}
+    ${row('Endgame', red?.endGameTowerPoints, blue?.endGameTowerPoints)}
     ${row('Penalties', red?.foulPoints, blue?.foulPoints)}
     <div class="sb-divider"></div>
     ${row('Total', red?.totalPoints, blue?.totalPoints, true)}
