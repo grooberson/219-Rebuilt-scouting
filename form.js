@@ -182,7 +182,11 @@ function setAllianceColor(val) {
 
 function adjust(key, delta) {
   formState[key] = Math.min(999, Math.max(0, (formState[key] || 0) + delta));
-  document.getElementById(key + '-display').value = formState[key];
+  const el = document.getElementById(key + '-display');
+  el.value = formState[key];
+  el.classList.remove('counter-flash-green', 'counter-flash-red');
+  void el.offsetWidth; // restart animation if clicked rapidly
+  el.classList.add(delta > 0 ? 'counter-flash-green' : 'counter-flash-red');
   updatePreview();
 }
 

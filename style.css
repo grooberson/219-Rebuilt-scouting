@@ -994,6 +994,18 @@ td.notes-cell {
   .alliance-score-summary { grid-template-columns: 1fr; }
 }
 
+/* Counter flash feedback */
+@keyframes counterFlashGreen {
+  0%   { box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.7); background: rgba(0, 230, 118, 0.18); }
+  100% { box-shadow: none; background: var(--bg3); }
+}
+@keyframes counterFlashRed {
+  0%   { box-shadow: 0 0 0 3px rgba(255, 58, 58, 0.6); background: rgba(255, 107, 53, 0.15); }
+  100% { box-shadow: none; background: var(--bg3); }
+}
+.counter-flash-green { animation: counterFlashGreen 0.5s ease-out; }
+.counter-flash-red   { animation: counterFlashRed 0.5s ease-out; }
+
 /* Entry animation */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
