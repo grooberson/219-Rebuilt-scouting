@@ -1,0 +1,207 @@
+// ===========================
+// FRC API — CREDENTIALS
+// ===========================
+// Credentials are XOR-obfuscated with key REBUILT-2026-FMA-NJWAS-219
+const _K = 'REBUILT-2026-FMA-NJWAS-219';
+const _C = '353772652b29265e5d5e0007147c757119772e3177370005005f616876307b2a79150a02001b1d7729204e2c2965736a1454';
+function _getAuth() {
+  const dec = _C.match(/.{2}/g).map((h, i) =>
+    String.fromCharCode(parseInt(h, 16) ^ _K.charCodeAt(i % _K.length))
+  ).join('');
+  return 'Basic ' + btoa(dec);
+}
+const FRC_BASE = 'https://frc-api.firstinspires.org/v3.0';
+const FRC_YEAR = '2026';
+const FRC_EVENT = 'NJWAS';
+
+// ===========================
+// OFFICIAL RANKINGS
+// ===========================
+let officialRankings = {};  // teamNumber → ranking object
+let _rankLastLoad = 0;
+
+async function loadOfficialRankings() {
+  const now = Date.now();
+  if (now - _rankLastLoad < 30000) return; // throttle to 30 s
+  _rankLastLoad = now;
+  try {
+    const res = await fetch(`${FRC_BASE}/${FRC_YEAR}/rankings/${FRC_EVENT}`, {
+      headers: { 'Authorization': _getAuth(), 'Accept': 'application/json' }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    officialRankings = {};
+    (data.Rankings || []).forEach(r => { officialRankings[r.teamNumber] = r; });
+    renderTeams(); // refresh table with official rank data
+  } catch (e) {
+    console.warn('FRC API rankings unavailable:', e);
+  }
+}
+
+// ===========================
+// SCHEDULE VIEW
+// ===========================
+let scheduleData = [];
+let _schedRefreshTimer = null;
+let _schedCountdown = 0;
+
+// Populated once EVENT_ROSTER is defined (see initRosterMap)
+const ROSTER_MAP = {};
+
+async function loadSchedule(isAutoRefresh = false) {
+  if (!isAutoRefresh) {
+    document.getElementById('schedStatus').textContent = 'Loading…';
+    document.getElementById('schedCountdown').textContent = '';
+  }
+  clearInterval(_schedRefreshTimer);
+  try {
+    const res = await fetch(`${FRC_BASE}/${FRC_YEAR}/schedule/${FRC_EVENT}/qual/hybrid`, {
+      headers: { 'Authorization': _getAuth(), 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    scheduleData = data.Schedule || [];
+    renderSchedule();
+    document.getElementById('schedStatus').textContent =
+      'Updated ' + new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+  } catch (e) {
+    document.getElementById('schedStatus').textContent = '⚠ FRC API unavailable';
+    console.warn('FRC schedule fetch failed:', e);
+  }
+  // Start 60-second auto-refresh countdown
+  _schedCountdown = 60;
+  _schedRefreshTimer = setInterval(() => {
+    _schedCountdown--;
+    const el = document.getElementById('schedCountdown');
+    if (el) el.textContent = `Refresh in ${_schedCountdown}s`;
+    if (_schedCountdown <= 0) {
+      clearInterval(_schedRefreshTimer);
+      loadSchedule(true);
+    }
+  }, 1000);
+}
+
+function renderSchedule() {
+  const container = document.getElementById('scheduleList');
+  if (!container) return;
+  if (!scheduleData.length) {
+    container.innerHTML = `<div class="empty-state">
+      <div style="font-size:2rem;margin-bottom:12px;">📋</div>
+      <div style="font-family:var(--font-display);font-size:1.1rem;color:var(--text);">Schedule not yet published</div>
+      <div style="color:var(--text-dim);margin-top:8px;font-size:0.85rem;">Check back when the event begins</div>
+    </div>`;
+    return;
+  }
+  const completed = scheduleData.filter(m => m.postResultTime && m.scoreRedFinal !== null && m.scoreRedFinal !== undefined);
+  const upcoming  = scheduleData.filter(m => !m.postResultTime || m.scoreRedFinal === null || m.scoreRedFinal === undefined);
+  let html = '';
+  if (upcoming.length) {
+    html += `<div class="sched-section-title">Upcoming — ${upcoming.length} match${upcoming.length !== 1 ? 'es' : ''}</div>`;
+    html += upcoming.map(m => renderMatchBlock(m, false)).join('');
+  }
+  if (completed.length) {
+    html += `<div class="sched-section-title">Completed — ${completed.length} match${completed.length !== 1 ? 'es' : ''}</div>`;
+    html += [...completed].reverse().map(m => renderMatchBlock(m, true)).join('');
+  }
+  container.innerHTML = html;
+}
+
+function renderMatchBlock(match, isCompleted) {
+  const red  = match.teams.filter(t => t.station.startsWith('Red'));
+  const blue = match.teams.filter(t => t.station.startsWith('Blue'));
+  const timeStr = new Date(match.startTime).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+
+  let headerRight;
+  if (isCompleted) {
+    const rWon = match.scoreRedFinal > match.scoreBlueFinal;
+    const bWon = match.scoreBlueFinal > match.scoreRedFinal;
+    headerRight = `<div class="match-score-row">
+      <span class="match-score-val red-score ${rWon ? 'winner' : ''}">${match.scoreRedFinal}</span>
+      <span class="match-score-sep">–</span>
+      <span class="match-score-val blue-score ${bWon ? 'winner' : ''}">${match.scoreBlueFinal}</span>
+    </div>`;
+  } else {
+    headerRight = `<span class="match-time-badge">${timeStr}</span>`;
+  }
+
+  const makePills = (teams, color) => teams.map(t => {
+    const info = ROSTER_MAP[t.teamNumber];
+    const name = info ? info.name : '';
+    const shortName = name.length > 13 ? name.slice(0, 12) + '…' : name;
+    const allianceVal = color === 'red' ? 'Red' : 'Blue';
+    return `<button class="team-pill ${color}"
+        onclick="scoutFromSchedule(${t.teamNumber},${match.matchNumber},'${allianceVal}')">
+      <span class="pill-num">${t.teamNumber}</span>
+      <span class="pill-name">${shortName}</span>
+    </button>`;
+  }).join('');
+
+  return `<div class="match-block ${isCompleted ? 'completed' : 'upcoming'}">
+    <div class="match-block-header">
+      <span class="match-block-num">Q${match.matchNumber}</span>
+      ${headerRight}
+    </div>
+    <div class="match-teams-grid">
+      <div class="match-alliance">${makePills(red, 'red')}</div>
+      <div class="match-alliance">${makePills(blue, 'blue')}</div>
+    </div>
+  </div>`;
+}
+
+function scoutFromSchedule(teamNum, matchNum, alliance) {
+  const info = ROSTER_MAP[teamNum];
+  const teamName = info ? info.name : '';
+  // Switch to scout tab
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-scout').classList.add('active');
+  document.querySelector('[onclick="showView(\'scout\')"]').classList.add('active');
+  // Pre-fill the form
+  selectTeam(teamNum, teamName);
+  document.getElementById('matchNum').value = matchNum;
+  document.getElementById('allianceColor').value = alliance;
+  setAllianceColor(alliance);
+  loadExistingEntry(teamNum, matchNum);
+  showToast(`Scouting T${teamNum} — Match ${matchNum} — ${alliance}`);
+  window.scrollTo(0, 0);
+}
+
+// ===========================
+// EVENT ROSTER — NJWAS 2026
+// ===========================
+const EVENT_ROSTER = [
+  { num: 11,    name: 'MORT' },
+  { num: 41,    name: 'RoboWarriors' },
+  { num: 193,   name: 'MORT Beta' },
+  { num: 219,   name: 'Team Impact' },
+  { num: 222,   name: 'Tigertrons' },
+  { num: 223,   name: 'Xtreme Heat' },
+  { num: 316,   name: 'LUNATECS' },
+  { num: 555,   name: 'Montclair Robotics' },
+  { num: 752,   name: 'Chargers' },
+  { num: 1279,  name: 'Cold Fusion' },
+  { num: 1672,  name: 'Robo T-Birds' },
+  { num: 1676,  name: 'The Pascack PI-oneers' },
+  { num: 1811,  name: 'FRESH' },
+  { num: 3142,  name: 'Aperture' },
+  { num: 3637,  name: 'The Daleks' },
+  { num: 4285,  name: 'Camo-Bots' },
+  { num: 4361,  name: 'Roxbotix' },
+  { num: 5895,  name: 'Peddie Robotics' },
+  { num: 5992,  name: 'Pirates' },
+  { num: 6016,  name: 'Tiger Robotics' },
+  { num: 6945,  name: 'Children of the Corn' },
+  { num: 8117,  name: 'Easton RoboRovers' },
+  { num: 8513,  name: 'Sisters 1st' },
+  { num: 8706,  name: 'MXS Bulldog Bots' },
+  { num: 8707,  name: 'The Newark Circuit Breakers' },
+  { num: 8771,  name: 'PioTech' },
+  { num: 9015,  name: 'Questionable Engineering' },
+  { num: 9116,  name: 'The Canucks & Bolts' },
+  { num: 10600, name: 'Two Steps Ahead' },
+  { num: 10995, name: 'ACS Eagle Robotics' },
+];
+
+function initRosterMap() {
+  EVENT_ROSTER.forEach(t => { ROSTER_MAP[t.num] = t; });
+}
