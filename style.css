@@ -1228,6 +1228,48 @@ td.notes-cell {
 .match-score-val.blue-score { color: #5588ff; }
 .match-score-val.winner { font-size: 1.1rem; color: var(--text-bright); }
 .match-score-sep { color: var(--text-dim); font-size: 0.75rem; }
+.score-expand-btn {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  transition: transform 0.15s;
+  user-select: none;
+}
+.score-breakdown {
+  border-top: 1px solid var(--border);
+  padding: 10px 14px;
+  background: var(--bg);
+}
+.sb-header-row, .sb-row {
+  display: grid;
+  grid-template-columns: 1fr 72px 72px;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 3px 0;
+}
+.sb-header-row { margin-bottom: 4px; }
+.sb-hdr {
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  text-align: center;
+}
+.sb-hdr.red-col  { color: #ff5555; }
+.sb-hdr.blue-col { color: #5588ff; }
+.sb-label { color: var(--text-dim); }
+.sb-val {
+  text-align: center;
+  color: var(--text);
+}
+.sb-val.red-col  { color: #ff8080; }
+.sb-val.blue-col { color: #7aacff; }
+.sb-row.sb-total .sb-label { color: var(--text-bright); font-weight: 700; }
+.sb-row.sb-total .sb-val   { color: var(--text-bright); font-weight: 700; }
+.sb-divider {
+  border-top: 1px solid var(--border);
+  margin: 5px 0;
+}
 .match-teams-grid {
   padding: 10px 12px;
   display: flex;

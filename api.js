@@ -45,6 +45,7 @@ async function loadOfficialRankings() {
 // SCHEDULE VIEW
 // ===========================
 let scheduleData = [];
+let scoreDetailData = {}; // matchNumber → { red: {...}, blue: {...} }
 let _schedRefreshTimer = null;
 let _schedCountdown = 0;
 
@@ -65,6 +66,7 @@ async function loadSchedule(isAutoRefresh = false) {
     const data = await res.json();
     scheduleData = data.Schedule || [];
     renderSchedule();
+    loadScoreDetails(); // fetch breakdown data in the background
     document.getElementById('schedStatus').textContent =
       'Updated ' + new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
   } catch (e) {
@@ -82,6 +84,61 @@ async function loadSchedule(isAutoRefresh = false) {
       loadSchedule(true);
     }
   }, 1000);
+}
+
+async function loadScoreDetails() {
+  try {
+    const res = await fetch(`${FRC_BASE}/${FRC_YEAR}/scores/${getFrcEvent()}/qual`, {
+      headers: { 'Authorization': _getAuth(), 'Accept': 'application/json' }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    scoreDetailData = {};
+    (data.MatchScores || []).forEach(ms => {
+      const red  = (ms.alliances || []).find(a => a.alliance === 'Red');
+      const blue = (ms.alliances || []).find(a => a.alliance === 'Blue');
+      if (red || blue) {
+        scoreDetailData[ms.matchNumber] = { red, blue };
+        // Update any already-rendered panel in place (avoids full re-render)
+        const panel = document.getElementById('score-detail-' + ms.matchNumber);
+        if (panel) panel.innerHTML = renderScoreBreakdown(red, blue);
+      }
+    });
+  } catch(e) {
+    console.warn('FRC score details unavailable:', e);
+  }
+}
+
+function renderScoreBreakdown(red, blue) {
+  const row = (label, rVal, bVal, bold) => `
+    <div class="sb-row${bold ? ' sb-total' : ''}">
+      <span class="sb-label">${label}</span>
+      <span class="sb-val red-col">${rVal ?? '—'}</span>
+      <span class="sb-val blue-col">${bVal ?? '—'}</span>
+    </div>`;
+  return `
+    <div class="sb-header-row">
+      <span></span>
+      <span class="sb-hdr red-col">RED</span>
+      <span class="sb-hdr blue-col">BLUE</span>
+    </div>
+    ${row('Auto', red?.autoPoints, blue?.autoPoints)}
+    ${row('Teleop', red?.teleopPoints, blue?.teleopPoints)}
+    ${row('Endgame', red?.endgamePoints, blue?.endgamePoints)}
+    ${row('Penalties', red?.foulPoints, blue?.foulPoints)}
+    <div class="sb-divider"></div>
+    ${row('Total', red?.totalPoints, blue?.totalPoints, true)}
+    ${row('RP Earned', red?.rp, blue?.rp)}
+  `;
+}
+
+function toggleMatchDetail(matchNum) {
+  const panel = document.getElementById('score-detail-' + matchNum);
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  const arrow = panel.closest('.match-block').querySelector('.score-expand-btn');
+  if (arrow) arrow.textContent = isOpen ? '▾' : '▴';
 }
 
 function renderSchedule() {
@@ -118,10 +175,13 @@ function renderMatchBlock(match, isCompleted) {
   if (isCompleted) {
     const rWon = match.scoreRedFinal > match.scoreBlueFinal;
     const bWon = match.scoreBlueFinal > match.scoreRedFinal;
-    headerRight = `<div class="match-score-row">
-      <span class="match-score-val red-score ${rWon ? 'winner' : ''}">${match.scoreRedFinal}</span>
-      <span class="match-score-sep">–</span>
-      <span class="match-score-val blue-score ${bWon ? 'winner' : ''}">${match.scoreBlueFinal}</span>
+    headerRight = `<div style="display:flex;align-items:center;gap:10px;">
+      <div class="match-score-row">
+        <span class="match-score-val red-score ${rWon ? 'winner' : ''}">${match.scoreRedFinal}</span>
+        <span class="match-score-sep">–</span>
+        <span class="match-score-val blue-score ${bWon ? 'winner' : ''}">${match.scoreBlueFinal}</span>
+      </div>
+      <span class="score-expand-btn">▾</span>
     </div>`;
   } else {
     headerRight = `<span class="match-time-badge">${timeStr}</span>`;
@@ -139,8 +199,18 @@ function renderMatchBlock(match, isCompleted) {
     </button>`;
   }).join('');
 
+  const detailPanel = isCompleted ? (() => {
+    const detail = scoreDetailData[match.matchNumber];
+    const content = detail
+      ? renderScoreBreakdown(detail.red, detail.blue)
+      : '<div style="color:var(--text-dim);font-size:0.75rem;padding:4px 0;">Loading breakdown…</div>';
+    return `<div class="score-breakdown" id="score-detail-${match.matchNumber}" style="display:none">${content}</div>`;
+  })() : '';
+
+  const headerAttrs = isCompleted ? `onclick="toggleMatchDetail(${match.matchNumber})" style="cursor:pointer"` : '';
+
   return `<div class="match-block ${isCompleted ? 'completed' : 'upcoming'}">
-    <div class="match-block-header">
+    <div class="match-block-header" ${headerAttrs}>
       <span class="match-block-num">Q${match.matchNumber}</span>
       ${headerRight}
     </div>
@@ -148,6 +218,7 @@ function renderMatchBlock(match, isCompleted) {
       <div class="match-alliance">${makePills(red, 'red')}</div>
       <div class="match-alliance">${makePills(blue, 'blue')}</div>
     </div>
+    ${detailPanel}
   </div>`;
 }
 
@@ -235,6 +306,7 @@ function switchEvent(code) {
   officialRankings = {};
   _rankLastLoad = 0;
   scheduleData = [];
+  scoreDetailData = {};
   // Update schedule section title
   const titleEl = document.getElementById('schedTitle');
   if (titleEl) titleEl.textContent = `Match Schedule — ${code} 2026`;
