@@ -252,6 +252,7 @@ const EVENT_ROSTERS = {
     { num: 222,   name: 'Tigertrons' },
     { num: 223,   name: 'Xtreme Heat' },
     { num: 316,   name: 'LUNATECS' },
+    { num: 430,   name: 'MORT GAMMA' },
     { num: 555,   name: 'Montclair Robotics' },
     { num: 752,   name: 'Chargers' },
     { num: 1279,  name: 'Cold Fusion' },
