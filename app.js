@@ -38,6 +38,7 @@ async function doLogin() {
   document.body.classList.remove('read-only');
   document.getElementById('loginOverlay').style.display = 'none';
   document.getElementById('scoutName').value = name;
+  _showLogoutBtn(name);
 }
 
 function doViewOnly() {
@@ -45,6 +46,7 @@ function doViewOnly() {
   readOnly = true;
   document.body.classList.add('read-only');
   document.getElementById('loginOverlay').style.display = 'none';
+  _showLogoutBtn('View Only');
 }
 
 function doTestMode() {
@@ -54,10 +56,26 @@ function doTestMode() {
   document.body.classList.remove('read-only');
   document.getElementById('loginOverlay').style.display = 'none';
   activateTestMode();
+  _showLogoutBtn('Test Mode');
 }
 
 function showLoginOverlay() {
   document.getElementById('loginOverlay').style.display = 'flex';
+}
+
+function _showLogoutBtn(label) {
+  const btn = document.getElementById('logoutBtn');
+  if (!btn) return;
+  btn.style.display = 'flex';
+  const nameEl = btn.querySelector('.logout-user');
+  if (nameEl) nameEl.textContent = label;
+}
+
+function doLogout() {
+  sessionStorage.removeItem('rebuilt_loggedIn');
+  sessionStorage.removeItem('rebuilt_readOnly');
+  sessionStorage.removeItem('rebuilt_testMode');
+  location.reload();
 }
 
 // getData() is provided by firebase-setup.js (real-time Firestore cache)
@@ -538,13 +556,16 @@ window.addEventListener('DOMContentLoaded', ()=>{
     readOnly = false;
     document.getElementById('loginOverlay').style.display = 'none';
     activateTestMode();
+    _showLogoutBtn('Test Mode');
   } else if (loggedIn && savedName) {
     document.getElementById('loginOverlay').style.display = 'none';
     document.getElementById('scoutName').value = savedName;
+    _showLogoutBtn(savedName);
   } else if (savedReadOnly) {
     readOnly = true;
     document.body.classList.add('read-only');
     document.getElementById('loginOverlay').style.display = 'none';
+    _showLogoutBtn('View Only');
   } else if (savedName) {
     // Pre-fill name so returning scouts only need to enter the password
     document.getElementById('loginName').value = savedName;
