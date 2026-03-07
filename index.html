@@ -40,6 +40,23 @@
     <span class="ro-label">READ-ONLY</span>
     <button class="ro-login-btn" onclick="showLoginOverlay()">→ Scout Login</button>
   </div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+    <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-dim);letter-spacing:0.08em;">ACTIVE EVENT</div>
+    <select id="eventSelect" onchange="switchEvent(this.value)" style="
+      background:var(--bg3);
+      border:1px solid var(--accent);
+      color:var(--accent);
+      font-family:var(--font-mono);
+      font-size:0.8rem;
+      padding:5px 10px;
+      border-radius:4px;
+      cursor:pointer;
+      outline:none;
+    ">
+      <option value="NJWAS">NJWAS — Washington</option>
+      <option value="NJFLA">NJFLA — Mount Olive</option>
+    </select>
+  </div>
   <div class="header-status">
     <div><span class="status-dot"></span>LOCAL STORAGE ACTIVE</div>
     <div id="entryCount" style="margin-top:4px;">0 ENTRIES LOGGED</div>
@@ -438,7 +455,7 @@
   <div class="view" id="view-schedule">
     <div style="max-width:900px;margin:0 auto;">
       <div class="sched-header">
-        <div class="sched-title">Match Schedule — NJWAS 2026</div>
+        <div class="sched-title" id="schedTitle">Match Schedule — NJWAS 2026</div>
         <div style="display:flex;align-items:center;gap:10px;">
           <div class="sched-meta">
             <div id="schedStatus">—</div>

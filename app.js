@@ -65,7 +65,7 @@ function saveData(d) {
 // TEAM AGGREGATION
 // ===========================
 function aggregateTeams() {
-  const data = getData();
+  const data = getData().filter(e => (e.event || 'NJWAS') === currentEvent);
   const map = {};
   data.forEach(e => {
     if (!map[e.teamNum]) map[e.teamNum] = [];
@@ -267,8 +267,8 @@ document.getElementById('teamModal').addEventListener('click', e => {
 });
 
 function deleteTeam(teamNum) {
-  if (!confirm(`Delete ALL entries for team ${teamNum}? This cannot be undone.`)) return;
-  const data = getData().filter(e=>e.teamNum!==teamNum);
+  if (!confirm(`Delete ALL entries for team ${teamNum} at ${currentEvent}? This cannot be undone.`)) return;
+  const data = getData().filter(e => !(e.teamNum === teamNum && (e.event || 'NJWAS') === currentEvent));
   saveData(data);
   closeModal();
   renderTeams();
@@ -413,7 +413,7 @@ function removeSlot(i) {
 function exportCSV() {
   const data = getData();
   if (!data.length) { showToast('No data to export'); return; }
-  const headers = ['teamNum','matchNum','alliance','scout','autoFuel','teleopFuel','fuelMissed','autoTower','teleopTower','score','driving','defense','reliability','autoMoved','hubAware','scoredInactive','climbFast','climbFailed','playedDefense','wasPinned','gotCard','autoStrategy','notes','timestamp'];
+  const headers = ['event','teamNum','matchNum','alliance','scout','autoFuel','teleopFuel','fuelMissed','autoTower','teleopTower','score','driving','defense','reliability','autoMoved','hubAware','scoredInactive','climbFast','climbFailed','playedDefense','wasPinned','gotCard','autoStrategy','notes','timestamp'];
   const csv = [headers.join(','), ...data.map(e=>headers.map(h=>{
     const v = e[h]===undefined?'':e[h];
     return typeof v==='string'&&v.includes(',') ? `"${v}"` : v;
@@ -504,7 +504,7 @@ function showView(name) {
 // HELPERS
 // ===========================
 function updateEntryCount() {
-  const n = getData().length;
+  const n = getData().filter(e => (e.event || 'NJWAS') === currentEvent).length;
   document.getElementById('entryCount').textContent = n + ' ENTR' + (n===1?'Y':'IES') + ' LOGGED';
 }
 
@@ -520,6 +520,12 @@ function showToast(msg) {
 // ===========================
 window.addEventListener('DOMContentLoaded', ()=>{
   initRosterMap();
+  // Restore persisted event selection
+  const savedEvent = localStorage.getItem('rebuilt_event') || 'NJWAS';
+  const eventSel = document.getElementById('eventSelect');
+  if (eventSel) eventSel.value = savedEvent;
+  const schedTitle = document.getElementById('schedTitle');
+  if (schedTitle) schedTitle.textContent = `Match Schedule — ${savedEvent} 2026`;
   setTower('autoTower', 0);
   setTower('teleopTower', 0);
   updatePreview();

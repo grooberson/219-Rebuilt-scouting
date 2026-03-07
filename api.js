@@ -12,7 +12,10 @@ function _getAuth() {
 }
 const FRC_BASE = 'https://frc-api.firstinspires.org/v3.0';
 const FRC_YEAR = '2026';
-const FRC_EVENT = 'NJWAS';
+
+// Current active event — persisted across sessions
+let currentEvent = localStorage.getItem('rebuilt_event') || 'NJWAS';
+function getFrcEvent() { return currentEvent; }
 
 // ===========================
 // OFFICIAL RANKINGS
@@ -25,7 +28,7 @@ async function loadOfficialRankings() {
   if (now - _rankLastLoad < 30000) return; // throttle to 30 s
   _rankLastLoad = now;
   try {
-    const res = await fetch(`${FRC_BASE}/${FRC_YEAR}/rankings/${FRC_EVENT}`, {
+    const res = await fetch(`${FRC_BASE}/${FRC_YEAR}/rankings/${getFrcEvent()}`, {
       headers: { 'Authorization': _getAuth(), 'Accept': 'application/json' }
     });
     if (!res.ok) return;
@@ -45,7 +48,7 @@ let scheduleData = [];
 let _schedRefreshTimer = null;
 let _schedCountdown = 0;
 
-// Populated once EVENT_ROSTER is defined (see initRosterMap)
+// Populated once initRosterMap() is called for the current event
 const ROSTER_MAP = {};
 
 async function loadSchedule(isAutoRefresh = false) {
@@ -55,7 +58,7 @@ async function loadSchedule(isAutoRefresh = false) {
   }
   clearInterval(_schedRefreshTimer);
   try {
-    const res = await fetch(`${FRC_BASE}/${FRC_YEAR}/schedule/${FRC_EVENT}/qual/hybrid`, {
+    const res = await fetch(`${FRC_BASE}/${FRC_YEAR}/schedule/${getFrcEvent()}/qual/hybrid`, {
       headers: { 'Authorization': _getAuth(), 'Accept': 'application/json' }
     });
     if (!res.ok) throw new Error(res.status);
@@ -167,41 +170,80 @@ function scoutFromSchedule(teamNum, matchNum, alliance) {
 }
 
 // ===========================
-// EVENT ROSTER — NJWAS 2026
+// EVENT ROSTERS
 // ===========================
-const EVENT_ROSTER = [
-  { num: 11,    name: 'MORT' },
-  { num: 41,    name: 'RoboWarriors' },
-  { num: 193,   name: 'MORT Beta' },
-  { num: 219,   name: 'Team Impact' },
-  { num: 222,   name: 'Tigertrons' },
-  { num: 223,   name: 'Xtreme Heat' },
-  { num: 316,   name: 'LUNATECS' },
-  { num: 555,   name: 'Montclair Robotics' },
-  { num: 752,   name: 'Chargers' },
-  { num: 1279,  name: 'Cold Fusion' },
-  { num: 1672,  name: 'Robo T-Birds' },
-  { num: 1676,  name: 'The Pascack PI-oneers' },
-  { num: 1811,  name: 'FRESH' },
-  { num: 3142,  name: 'Aperture' },
-  { num: 3637,  name: 'The Daleks' },
-  { num: 4285,  name: 'Camo-Bots' },
-  { num: 4361,  name: 'Roxbotix' },
-  { num: 5895,  name: 'Peddie Robotics' },
-  { num: 5992,  name: 'Pirates' },
-  { num: 6016,  name: 'Tiger Robotics' },
-  { num: 6945,  name: 'Children of the Corn' },
-  { num: 8117,  name: 'Easton RoboRovers' },
-  { num: 8513,  name: 'Sisters 1st' },
-  { num: 8706,  name: 'MXS Bulldog Bots' },
-  { num: 8707,  name: 'The Newark Circuit Breakers' },
-  { num: 8771,  name: 'PioTech' },
-  { num: 9015,  name: 'Questionable Engineering' },
-  { num: 9116,  name: 'The Canucks & Bolts' },
-  { num: 10600, name: 'Two Steps Ahead' },
-  { num: 10995, name: 'ACS Eagle Robotics' },
-];
+const EVENT_ROSTERS = {
+  NJWAS: [
+    { num: 11,    name: 'MORT' },
+    { num: 41,    name: 'RoboWarriors' },
+    { num: 193,   name: 'MORT Beta' },
+    { num: 219,   name: 'Team Impact' },
+    { num: 222,   name: 'Tigertrons' },
+    { num: 223,   name: 'Xtreme Heat' },
+    { num: 316,   name: 'LUNATECS' },
+    { num: 555,   name: 'Montclair Robotics' },
+    { num: 752,   name: 'Chargers' },
+    { num: 1279,  name: 'Cold Fusion' },
+    { num: 1672,  name: 'Robo T-Birds' },
+    { num: 1676,  name: 'The Pascack PI-oneers' },
+    { num: 1811,  name: 'FRESH' },
+    { num: 3142,  name: 'Aperture' },
+    { num: 3637,  name: 'The Daleks' },
+    { num: 4285,  name: 'Camo-Bots' },
+    { num: 4361,  name: 'Roxbotix' },
+    { num: 5895,  name: 'Peddie Robotics' },
+    { num: 5992,  name: 'Pirates' },
+    { num: 6016,  name: 'Tiger Robotics' },
+    { num: 6945,  name: 'Children of the Corn' },
+    { num: 8117,  name: 'Easton RoboRovers' },
+    { num: 8513,  name: 'Sisters 1st' },
+    { num: 8706,  name: 'MXS Bulldog Bots' },
+    { num: 8707,  name: 'The Newark Circuit Breakers' },
+    { num: 8771,  name: 'PioTech' },
+    { num: 9015,  name: 'Questionable Engineering' },
+    { num: 9116,  name: 'The Canucks & Bolts' },
+    { num: 10600, name: 'Two Steps Ahead' },
+    { num: 10995, name: 'ACS Eagle Robotics' },
+  ],
+
+  // TODO: Replace with full NJFLA team roster once published
+  NJFLA: [
+    { num: 219,  name: 'Team Impact' },
+  ],
+};
+
+const EVENT_LABELS = {
+  NJWAS: 'NJWAS — Washington',
+  NJFLA: 'NJFLA — Mount Olive',
+};
+
+function getEventRoster() {
+  return EVENT_ROSTERS[currentEvent] || [];
+}
 
 function initRosterMap() {
-  EVENT_ROSTER.forEach(t => { ROSTER_MAP[t.num] = t; });
+  // Clear existing entries
+  Object.keys(ROSTER_MAP).forEach(k => delete ROSTER_MAP[k]);
+  getEventRoster().forEach(t => { ROSTER_MAP[t.num] = t; });
+}
+
+function switchEvent(code) {
+  if (code === currentEvent) return;
+  currentEvent = code;
+  localStorage.setItem('rebuilt_event', code);
+  initRosterMap();
+  officialRankings = {};
+  _rankLastLoad = 0;
+  scheduleData = [];
+  // Update schedule section title
+  const titleEl = document.getElementById('schedTitle');
+  if (titleEl) titleEl.textContent = `Match Schedule — ${code} 2026`;
+  // Sync selector in case called programmatically
+  const sel = document.getElementById('eventSelect');
+  if (sel) sel.value = code;
+  renderTeams();
+  renderAlliance();
+  updateEntryCount();
+  loadOfficialRankings();
+  showToast(`Event: ${EVENT_LABELS[code] || code}`);
 }

@@ -10,9 +10,10 @@ let teamAcHighlight = -1;
 function teamAcFilter() {
   const q = document.getElementById('teamAcInput').value.trim().toLowerCase();
   const dd = document.getElementById('teamDropdown');
+  const roster = getEventRoster();
   const matches = q
-    ? EVENT_ROSTER.filter(t => String(t.num).startsWith(q) || t.name.toLowerCase().includes(q))
-    : EVENT_ROSTER;
+    ? roster.filter(t => String(t.num).startsWith(q) || t.name.toLowerCase().includes(q))
+    : roster;
   if (!matches.length) { dd.innerHTML = ''; dd.classList.remove('open'); return; }
   teamAcHighlight = -1;
   dd.innerHTML = matches.map(t => {
@@ -79,7 +80,7 @@ function checkForExistingEntry() {
 
 function loadExistingEntry(teamNum, matchNum) {
   const data = getData();
-  const existing = data.find(e => e.teamNum === teamNum && e.matchNum === matchNum);
+  const existing = data.find(e => e.teamNum === teamNum && e.matchNum === matchNum && (e.event || 'NJWAS') === currentEvent);
   if (!existing) { editingEntryId = null; return; }
 
   editingEntryId = existing.id;
@@ -293,6 +294,7 @@ function submitEntry() {
 
   const entry = {
     id: Date.now(),
+    event: currentEvent,
     teamNum,
     matchNum,
     alliance: document.getElementById('allianceColor').value,
@@ -336,7 +338,7 @@ function submitEntry() {
   };
 
   const data = getData();
-  const existingIdx = data.findIndex(e => e.teamNum === teamNum && e.matchNum === matchNum);
+  const existingIdx = data.findIndex(e => e.teamNum === teamNum && e.matchNum === matchNum && (e.event || 'NJWAS') === currentEvent);
   if (existingIdx >= 0) {
     entry.id = data[existingIdx].id; // preserve original id
     data[existingIdx] = entry;
