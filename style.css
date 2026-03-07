@@ -1227,7 +1227,30 @@ td.notes-cell {
 }
 .match-score-val.red-score { color: #ff5555; }
 .match-score-val.blue-score { color: #5588ff; }
-.match-score-val.winner { font-size: 1.1rem; color: var(--text-bright); }
+.match-score-val.winner { font-size: 1.1rem; }
+.match-score-val.red-score.winner {
+  color: #ff7777;
+  text-shadow: 0 0 10px rgba(255, 85, 85, 0.55);
+  background: rgba(255, 85, 85, 0.12);
+  border: 1px solid rgba(255, 85, 85, 0.45);
+  border-radius: 5px;
+  padding: 1px 7px;
+}
+.match-score-val.blue-score.winner {
+  color: #7799ff;
+  text-shadow: 0 0 10px rgba(85, 136, 255, 0.55);
+  background: rgba(85, 136, 255, 0.12);
+  border: 1px solid rgba(85, 136, 255, 0.45);
+  border-radius: 5px;
+  padding: 1px 7px;
+}
+.match-score-val.winner::after {
+  content: '▲';
+  font-size: 0.5em;
+  vertical-align: super;
+  margin-left: 2px;
+  opacity: 0.8;
+}
 .match-score-sep { color: var(--text-dim); font-size: 0.75rem; }
 .score-expand-btn {
   font-family: var(--font-mono);
