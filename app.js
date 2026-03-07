@@ -47,6 +47,15 @@ function doViewOnly() {
   document.getElementById('loginOverlay').style.display = 'none';
 }
 
+function doTestMode() {
+  sessionStorage.setItem('rebuilt_testMode', '1');
+  sessionStorage.removeItem('rebuilt_readOnly');
+  readOnly = false;
+  document.body.classList.remove('read-only');
+  document.getElementById('loginOverlay').style.display = 'none';
+  activateTestMode();
+}
+
 function showLoginOverlay() {
   document.getElementById('loginOverlay').style.display = 'flex';
 }
@@ -524,7 +533,12 @@ window.addEventListener('DOMContentLoaded', ()=>{
   const loggedIn = sessionStorage.getItem('rebuilt_loggedIn');
   const savedName = localStorage.getItem('rebuilt_scoutName');
   const savedReadOnly = sessionStorage.getItem('rebuilt_readOnly');
-  if (loggedIn && savedName) {
+  const savedTestMode = sessionStorage.getItem('rebuilt_testMode');
+  if (savedTestMode) {
+    readOnly = false;
+    document.getElementById('loginOverlay').style.display = 'none';
+    activateTestMode();
+  } else if (loggedIn && savedName) {
     document.getElementById('loginOverlay').style.display = 'none';
     document.getElementById('scoutName').value = savedName;
   } else if (savedReadOnly) {
