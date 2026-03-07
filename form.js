@@ -337,17 +337,15 @@ function submitEntry() {
     timestamp: new Date().toISOString()
   };
 
-  const data = getData();
-  const existingIdx = data.findIndex(e => e.teamNum === teamNum && e.matchNum === matchNum && (e.event || 'NJWAS') === currentEvent);
-  if (existingIdx >= 0) {
-    entry.id = data[existingIdx].id; // preserve original id
-    data[existingIdx] = entry;
-  } else {
-    data.push(entry);
-  }
-  saveData(data);
-  editingEntryId = null;
-  updateEntryCount();
-  showToast(existingIdx >= 0 ? `✓ Entry updated — Team ${teamNum} Match ${matchNum}` : '✓ Entry saved — Team ' + teamNum);
-  resetForm();
+  const existing = getData().find(e => e.teamNum === teamNum && e.matchNum === matchNum && (e.event || 'NJWAS') === currentEvent);
+  if (existing) entry.id = existing.id; // preserve original id on update
+  const isUpdate = !!existing;
+  saveEntryToFirestore(entry)
+    .then(() => {
+      editingEntryId = null;
+      showToast(isUpdate ? `✓ Entry updated — Team ${teamNum} Match ${matchNum}` : '✓ Entry saved — Team ' + teamNum);
+      resetForm();
+      // onSnapshot will update the count and re-render automatically
+    })
+    .catch(() => showToast('⚠ Save failed — check connection'));
 }

@@ -51,15 +51,7 @@ function showLoginOverlay() {
   document.getElementById('loginOverlay').style.display = 'flex';
 }
 
-// ===========================
-// STORAGE
-// ===========================
-function getData() {
-  try { return JSON.parse(localStorage.getItem('rebuilt_scout') || '[]'); } catch { return []; }
-}
-function saveData(d) {
-  localStorage.setItem('rebuilt_scout', JSON.stringify(d));
-}
+// getData() is provided by firebase-setup.js (real-time Firestore cache)
 
 // ===========================
 // TEAM AGGREGATION
@@ -268,12 +260,13 @@ document.getElementById('teamModal').addEventListener('click', e => {
 
 function deleteTeam(teamNum) {
   if (!confirm(`Delete ALL entries for team ${teamNum} at ${currentEvent}? This cannot be undone.`)) return;
-  const data = getData().filter(e => !(e.teamNum === teamNum && (e.event || 'NJWAS') === currentEvent));
-  saveData(data);
-  closeModal();
-  renderTeams();
-  renderAlliance();
-  showToast('Deleted team ' + teamNum);
+  deleteTeamFromFirestore(teamNum, currentEvent)
+    .then(() => {
+      closeModal();
+      showToast('Deleted team ' + teamNum);
+      // onSnapshot will re-render tables automatically
+    })
+    .catch(() => showToast('⚠ Delete failed'));
 }
 
 // ===========================
@@ -441,19 +434,14 @@ function importJSON(input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     try {
       const imported = JSON.parse(e.target.result);
       if (!Array.isArray(imported)) { showToast('⚠ Invalid file — expected JSON array'); return; }
-      const existing = getData();
-      const existingIds = new Set(existing.map(e => e.id));
-      const newEntries = imported.filter(e => e.teamNum && e.matchNum && !existingIds.has(e.id));
-      if (!newEntries.length) { showToast('No new entries to merge'); return; }
-      saveData([...existing, ...newEntries]);
-      renderTeams();
-      renderAlliance();
-      updateEntryCount();
-      showToast(`✓ Merged ${newEntries.length} new entr${newEntries.length===1?'y':'ies'}`);
+      const count = await batchImportToFirestore(imported);
+      if (!count) { showToast('No new entries to merge'); return; }
+      showToast(`✓ Merged ${count} new entr${count===1?'y':'ies'}`);
+      // onSnapshot will re-render automatically
     } catch {
       showToast('⚠ Could not parse file');
     } finally {
@@ -465,26 +453,26 @@ function importJSON(input) {
 
 function deleteEntry(entryId, teamNum) {
   if (!confirm('Delete this match entry?')) return;
-  const data = getData().filter(e => e.id !== entryId);
-  saveData(data);
-  renderTeams();
-  renderAlliance();
-  updateEntryCount();
-  // Refresh modal — close if no entries left for this team, else re-open
-  const remaining = data.filter(e => e.teamNum === teamNum);
-  if (remaining.length) openTeamModal(teamNum);
-  else closeModal();
-  showToast('Entry deleted');
+  const hasRemaining = getData().filter(e => e.teamNum === teamNum && e.id !== entryId).length > 0;
+  deleteEntryFromFirestore(entryId)
+    .then(() => {
+      showToast('Entry deleted');
+      // onSnapshot will re-render; decide modal state optimistically
+      if (hasRemaining) openTeamModal(teamNum);
+      else closeModal();
+    })
+    .catch(() => showToast('⚠ Delete failed'));
 }
 
 function clearAll() {
   if (!confirm('Delete ALL scouting data? This cannot be undone.')) return;
-  localStorage.removeItem('rebuilt_scout');
-  selectedAlliance = [null,null,null];
-  renderTeams();
-  renderAlliance();
-  updateEntryCount();
-  showToast('All data cleared');
+  clearAllEntriesFromFirestore(currentEvent)
+    .then(() => {
+      selectedAlliance = [null,null,null];
+      showToast('All data cleared');
+      // onSnapshot will re-render automatically
+    })
+    .catch(() => showToast('⚠ Clear failed'));
 }
 
 // ===========================
