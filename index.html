@@ -473,6 +473,10 @@
           <button class="btn-sm" onclick="loadSchedule()">↺ Refresh</button>
         </div>
       </div>
+      <div style="display:flex;gap:6px;margin-bottom:12px;">
+        <button id="schedToggleUpcoming" class="btn-sm sched-tab-active" onclick="setScheduleView('upcoming')">Upcoming</button>
+        <button id="schedToggleCompleted" class="btn-sm" onclick="setScheduleView('completed')">Completed</button>
+      </div>
       <div id="scheduleList">
         <div class="empty-state">
           <div style="font-family:var(--font-display);font-size:1.1rem;color:var(--text);">Loading schedule…</div>

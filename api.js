@@ -46,6 +46,7 @@ async function loadOfficialRankings() {
 // ===========================
 let scheduleData = [];
 let scoreDetailData = {}; // matchNumber → { red: {...}, blue: {...} }
+let scheduleView = 'upcoming'; // 'upcoming' | 'completed'
 let _schedRefreshTimer = null;
 let _schedCountdown = 0;
 
@@ -141,6 +142,15 @@ function toggleMatchDetail(matchNum) {
   if (arrow) arrow.textContent = isOpen ? '▾' : '▴';
 }
 
+function setScheduleView(view) {
+  scheduleView = view;
+  const upBtn = document.getElementById('schedToggleUpcoming');
+  const cmBtn = document.getElementById('schedToggleCompleted');
+  if (upBtn) upBtn.classList.toggle('sched-tab-active', view === 'upcoming');
+  if (cmBtn) cmBtn.classList.toggle('sched-tab-active', view === 'completed');
+  renderSchedule();
+}
+
 function renderSchedule() {
   const container = document.getElementById('scheduleList');
   if (!container) return;
@@ -155,13 +165,20 @@ function renderSchedule() {
   const completed = scheduleData.filter(m => m.postResultTime && m.scoreRedFinal !== null && m.scoreRedFinal !== undefined);
   const upcoming  = scheduleData.filter(m => !m.postResultTime || m.scoreRedFinal === null || m.scoreRedFinal === undefined);
   let html = '';
-  if (upcoming.length) {
-    html += `<div class="sched-section-title">Upcoming — ${upcoming.length} match${upcoming.length !== 1 ? 'es' : ''}</div>`;
-    html += upcoming.map(m => renderMatchBlock(m, false)).join('');
-  }
-  if (completed.length) {
-    html += `<div class="sched-section-title">Completed — ${completed.length} match${completed.length !== 1 ? 'es' : ''}</div>`;
-    html += [...completed].reverse().map(m => renderMatchBlock(m, true)).join('');
+  if (scheduleView === 'completed') {
+    if (completed.length) {
+      html += `<div class="sched-section-title">Completed — ${completed.length} match${completed.length !== 1 ? 'es' : ''}</div>`;
+      html += [...completed].reverse().map(m => renderMatchBlock(m, true)).join('');
+    } else {
+      html = `<div class="empty-state"><div style="color:var(--text-dim);font-size:0.9rem;">No completed matches yet</div></div>`;
+    }
+  } else {
+    if (upcoming.length) {
+      html += `<div class="sched-section-title">Upcoming — ${upcoming.length} match${upcoming.length !== 1 ? 'es' : ''}</div>`;
+      html += upcoming.map(m => renderMatchBlock(m, false)).join('');
+    } else {
+      html = `<div class="empty-state"><div style="color:var(--text-dim);font-size:0.9rem;">No upcoming matches</div></div>`;
+    }
   }
   container.innerHTML = html;
 }
