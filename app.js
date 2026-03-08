@@ -244,7 +244,7 @@ function openTeamModal(teamNum) {
     return `
       <div class="match-entry">
         <div class="match-entry-header">
-          <span>Match ${e.matchNum} — ${e.alliance||'?'} Alliance</span>
+          <span>Match ${e.matchNum} — ${e.alliance||'?'} Alliance${e.scout ? ` · <span style="color:var(--text-dim);font-size:0.82rem;">Scout: ${e.scout}</span>` : ''}</span>
           <div style="display:flex;align-items:center;gap:8px;">
             <span class="match-score">${e.score} pts</span>
             <button class="btn-sm danger" style="padding:2px 8px;font-size:0.7rem;" onclick="deleteEntry(${e.id},${teamNum})">✕</button>
