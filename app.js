@@ -5,6 +5,7 @@ let sortKey = 'avgScore';
 let sortAsc = false;
 let selectedAlliance = [null, null, null];
 let takenByAlliance = {};
+let preferredRanks = {};
 let editingEntryId = null;
 let readOnly = false;
 
@@ -332,7 +333,14 @@ function deleteTeam(teamNum) {
 // ALLIANCE PICKER
 // ===========================
 function renderAlliance() {
-  const teams = aggregateTeams().sort((a,b)=>b.avgScore-a.avgScore);
+  const teams = aggregateTeams().sort((a, b) => {
+    const ra = preferredRanks[a.teamNum];
+    const rb = preferredRanks[b.teamNum];
+    if (ra != null && rb != null) return ra - rb;
+    if (ra != null) return -1;
+    if (rb != null) return 1;
+    return b.avgScore - a.avgScore;
+  });
   const container = document.getElementById('allianceCards');
   const empty = document.getElementById('allianceEmpty');
   const content = document.getElementById('allianceContent');
@@ -359,6 +367,7 @@ function renderAlliance() {
     const allianceOptions = `<option value="">—</option>${Array.from({length:8},(_,n)=>`<option value="${n+1}" ${takenNum==n+1?'selected':''}>A${n+1}</option>`).join('')}`;
 
     const teamName = ROSTER_MAP[t.teamNum]?.name || '';
+    const hasPref = preferredRanks[t.teamNum] != null;
     return `
       <div class="team-card ${isSelected?'selected':''} ${isTaken?'taken':''}" onclick="toggleAlliancePick(${t.teamNum})">
         <div class="card-header">
@@ -371,7 +380,7 @@ function renderAlliance() {
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <select class="alliance-num-select${isTaken?' taken':''}" style="${isTaken?`color:${ALLIANCE_COLORS[takenNum]};border-color:${ALLIANCE_COLORS[takenNum]};`:'color:var(--text-dim);border-color:var(--border);'}" onchange="setTeamAlliance(${t.teamNum},this.value)" onclick="event.stopPropagation()">${allianceOptions}</select>
-            <div class="card-rank">#${i+1}</div>
+            <input class="rank-input${hasPref?' rank-set':''}" type="number" min="1" value="${hasPref?preferredRanks[t.teamNum]:''}" placeholder="#${i+1}" title="Set preferred rank" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter')this.blur()" onchange="setPreferredRank(${t.teamNum},this.value)" onclick="event.stopPropagation()">
           </div>
         </div>
         ${isTaken?`<div class="taken-overlay" style="background:${ALLIANCE_COLORS[takenNum]}22;border-color:${ALLIANCE_COLORS[takenNum]};">TAKEN · A${takenNum}</div>`:''}
@@ -422,6 +431,7 @@ function toggleAlliancePick(teamNum) {
 // Called by firebase-setup.js onSnapshot — applies shared alliance state from Firestore
 function applyAllianceState(state) {
   takenByAlliance = (state && state.takenByAlliance) ? state.takenByAlliance : {};
+  preferredRanks = (state && state.preferredRanks) ? state.preferredRanks : {};
   renderAlliance();
 }
 
@@ -435,7 +445,19 @@ function setTeamAlliance(teamNum, val) {
     if (idx >= 0) { selectedAlliance[idx] = null; }
   }
   renderAlliance();
-  saveAllianceState(currentEvent, takenByAlliance).catch(() => showToast('⚠ Could not save alliance state'));
+  saveAllianceState(currentEvent, takenByAlliance, preferredRanks).catch(() => showToast('⚠ Could not save alliance state'));
+}
+
+function setPreferredRank(teamNum, val) {
+  if (readOnly) { showToast('View-only mode — cannot change preferred ranks'); renderAlliance(); return; }
+  const n = parseInt(val);
+  if (!val || isNaN(n) || n < 1) {
+    delete preferredRanks[teamNum];
+  } else {
+    preferredRanks[teamNum] = n;
+  }
+  renderAlliance();
+  saveAllianceState(currentEvent, takenByAlliance, preferredRanks).catch(() => showToast('⚠ Could not save alliance state'));
 }
 
 function renderDraftBoard() {

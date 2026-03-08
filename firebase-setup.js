@@ -197,14 +197,19 @@ async function batchImportToFirestore(entries) {
 let _allianceUnsubscribe = null;
 
 function _getTestAllianceData(eventCode) {
-  try { return JSON.parse(localStorage.getItem('rebuilt_alliance_' + eventCode) || '{}'); } catch { return {}; }
+  try {
+    const stored = JSON.parse(localStorage.getItem('rebuilt_alliance_' + eventCode) || '{}');
+    // Handle legacy format where only takenByAlliance was stored directly
+    if (stored && !stored.takenByAlliance) return { takenByAlliance: stored };
+    return stored;
+  } catch { return {}; }
 }
 
 function _subscribeAllianceState(eventCode) {
   if (_allianceUnsubscribe) { _allianceUnsubscribe(); _allianceUnsubscribe = null; }
   if (_testMode) {
     if (typeof applyAllianceState === 'function') {
-      applyAllianceState({ takenByAlliance: _getTestAllianceData(eventCode) });
+      applyAllianceState(_getTestAllianceData(eventCode));
     }
     return;
   }
@@ -218,12 +223,12 @@ function _subscribeAllianceState(eventCode) {
   });
 }
 
-async function saveAllianceState(eventCode, takenMap) {
+async function saveAllianceState(eventCode, takenMap, ranksMap = {}) {
   if (_testMode) {
-    localStorage.setItem('rebuilt_alliance_' + eventCode, JSON.stringify(takenMap));
+    localStorage.setItem('rebuilt_alliance_' + eventCode, JSON.stringify({ takenByAlliance: takenMap, preferredRanks: ranksMap }));
     return;
   }
-  await db.collection('alliance_state').doc(eventCode).set({ takenByAlliance: takenMap });
+  await db.collection('alliance_state').doc(eventCode).set({ takenByAlliance: takenMap, preferredRanks: ranksMap });
 }
 
 async function clearAllianceState(eventCode) {

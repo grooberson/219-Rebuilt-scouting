@@ -691,6 +691,26 @@ td.notes-cell {
   padding: 4px 8px;
   border-radius: 4px;
 }
+.rank-input {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 4px 6px;
+  border-radius: 4px;
+  width: 46px;
+  text-align: center;
+  cursor: text;
+}
+.rank-input::placeholder { color: var(--text-dim); opacity: 1; }
+.rank-input.rank-set {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.rank-input::-webkit-inner-spin-button,
+.rank-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.rank-input { -moz-appearance: textfield; }
 
 .card-stats {
   display: grid;
