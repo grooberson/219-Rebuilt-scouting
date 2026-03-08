@@ -10,6 +10,10 @@
 //         allow read: if true;
 //         allow write: if request.auth != null;
 //       }
+//       match /alliance_state/{eventCode} {
+//         allow read: if true;
+//         allow write: if request.auth != null;
+//       }
 //     }
 //   }
 //
@@ -61,6 +65,9 @@ function activateTestMode() {
   _testMode = true;
   sessionStorage.setItem('rebuilt_testMode', '1');
   _updateDbStatus('TEST MODE — LOCAL ONLY', 'background:#e8a000');
+  if (typeof applyAllianceState === 'function') {
+    applyAllianceState({ takenByAlliance: _getTestAllianceData(currentEvent) });
+  }
   _rerenderAll();
 }
 
@@ -182,3 +189,50 @@ async function batchImportToFirestore(entries) {
   }
   return newEntries.length;
 }
+
+// ===========================
+// ALLIANCE STATE (shared, real-time)
+// Stored as alliance_state/{eventCode} → { takenByAlliance: { "teamNum": allianceNum, ... } }
+// ===========================
+let _allianceUnsubscribe = null;
+
+function _getTestAllianceData(eventCode) {
+  try { return JSON.parse(localStorage.getItem('rebuilt_alliance_' + eventCode) || '{}'); } catch { return {}; }
+}
+
+function _subscribeAllianceState(eventCode) {
+  if (_allianceUnsubscribe) { _allianceUnsubscribe(); _allianceUnsubscribe = null; }
+  if (_testMode) {
+    if (typeof applyAllianceState === 'function') {
+      applyAllianceState({ takenByAlliance: _getTestAllianceData(eventCode) });
+    }
+    return;
+  }
+  _allianceUnsubscribe = db.collection('alliance_state').doc(eventCode).onSnapshot(snap => {
+    if (_testMode) return;
+    if (typeof applyAllianceState === 'function') {
+      applyAllianceState(snap.exists ? snap.data() : {});
+    }
+  }, err => {
+    console.warn('Alliance state listener error:', err);
+  });
+}
+
+async function saveAllianceState(eventCode, takenMap) {
+  if (_testMode) {
+    localStorage.setItem('rebuilt_alliance_' + eventCode, JSON.stringify(takenMap));
+    return;
+  }
+  await db.collection('alliance_state').doc(eventCode).set({ takenByAlliance: takenMap });
+}
+
+async function clearAllianceState(eventCode) {
+  if (_testMode) {
+    localStorage.removeItem('rebuilt_alliance_' + eventCode);
+    return;
+  }
+  await db.collection('alliance_state').doc(eventCode).delete();
+}
+
+// Start listening for the initial event
+_subscribeAllianceState(currentEvent);

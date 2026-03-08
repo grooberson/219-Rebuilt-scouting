@@ -817,6 +817,116 @@ td.notes-cell {
 .rp-pill.rp-reached .rp-name { color: var(--gold); }
 .rp-pill.rp-reached .rp-val { color: var(--gold); }
 
+/* ---- TAKEN / ALLIANCE BADGE ---- */
+.team-card.taken {
+  opacity: 0.45;
+  cursor: default;
+}
+.team-card.taken:hover { border-color: var(--border); }
+.taken-overlay {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #fff;
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 3px 8px;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+.alliance-num-select {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 6px;
+  cursor: pointer;
+  outline: none;
+  min-width: 42px;
+  text-align: center;
+}
+.alliance-num-select.taken {
+  font-weight: 800;
+}
+.alliance-num-select:focus { border-color: var(--border-bright); }
+
+/* ---- DRAFT BOARD ---- */
+.draft-board-section {
+  margin-top: 36px;
+  background: var(--panel);
+  border: 1px solid var(--border-bright);
+  border-radius: 8px;
+  padding: 22px;
+}
+.draft-board-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-bright);
+  margin-bottom: 16px;
+}
+.draft-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 10px;
+}
+.draft-col {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--ac, var(--border));
+  border-radius: 6px;
+  padding: 10px 8px;
+  min-height: 90px;
+}
+.draft-col-header {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ac, var(--text-dim));
+  margin-bottom: 8px;
+  text-align: center;
+}
+.draft-col-teams {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.draft-chip {
+  background: var(--panel);
+  border: 1px solid var(--ac, var(--border));
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ac, var(--text));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+}
+.draft-chip-score {
+  font-size: 0.6rem;
+  font-weight: 400;
+  color: var(--text-dim);
+}
+.draft-empty {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 6px 0;
+  font-family: var(--font-mono);
+}
+
 /* ---- DETAIL MODAL ---- */
 .modal-overlay {
   position: fixed;
@@ -940,6 +1050,7 @@ td.notes-cell {
   .tower-select { grid-template-columns: repeat(2, 1fr); }
   .alliance-slots { grid-template-columns: 1fr; }
   .alliance-score-summary { grid-template-columns: 1fr 1fr; }
+  .draft-board { grid-template-columns: repeat(4, 1fr); }
   .match-stats-grid { grid-template-columns: 1fr 1fr; }
   /* Hide RP Potential and Notes columns on tablet portrait — too wide */
   #teamsTable th:nth-child(8), #teamsTable td:nth-child(8),
@@ -993,6 +1104,7 @@ td.notes-cell {
 
   /* Alliance score summary: single column on phone */
   .alliance-score-summary { grid-template-columns: 1fr; }
+  .draft-board { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* Counter flash feedback */

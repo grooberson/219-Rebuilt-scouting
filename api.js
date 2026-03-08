@@ -331,6 +331,7 @@ function switchEvent(code) {
   // Sync selector in case called programmatically
   const sel = document.getElementById('eventSelect');
   if (sel) sel.value = code;
+  _subscribeAllianceState(code);
   renderTeams();
   renderAlliance();
   updateEntryCount();

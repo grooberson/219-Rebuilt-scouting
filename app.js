@@ -4,8 +4,11 @@
 let sortKey = 'avgScore';
 let sortAsc = false;
 let selectedAlliance = [null, null, null];
+let takenByAlliance = {};
 let editingEntryId = null;
 let readOnly = false;
+
+const ALLIANCE_COLORS = ['','#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#3b82f6','#a855f7','#ec4899'];
 
 // ===========================
 // AUTH
@@ -316,18 +319,26 @@ function renderAlliance() {
   const climbLabel = ['—','L1','L2','L3'];
   container.innerHTML = teams.slice(0,20).map((t,i)=>{
     const isSelected = selectedAlliance.includes(t.teamNum);
+    const takenNum = takenByAlliance[t.teamNum];
+    const isTaken = !!takenNum;
     const tags = [];
     if(t.hasStrFuelVolume) tags.push('HIGH FUEL');
     if(t.hasStrClimber) tags.push('CLIMBER');
     if(t.hasStrConsistentAuto) tags.push('AUTO');
     if(t.hasStrDefense) tags.push('DEFENSE');
 
+    const allianceOptions = `<option value="">—</option>${Array.from({length:8},(_,n)=>`<option value="${n+1}" ${takenNum==n+1?'selected':''}>A${n+1}</option>`).join('')}`;
+
     return `
-      <div class="team-card ${isSelected?'selected':''}" onclick="toggleAlliancePick(${t.teamNum})">
+      <div class="team-card ${isSelected?'selected':''} ${isTaken?'taken':''}" onclick="toggleAlliancePick(${t.teamNum})">
         <div class="card-header">
           <div class="card-team-num">Team ${t.teamNum}</div>
-          <div class="card-rank">#${i+1} seed</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <select class="alliance-num-select${isTaken?' taken':''}" style="${isTaken?`color:${ALLIANCE_COLORS[takenNum]};border-color:${ALLIANCE_COLORS[takenNum]};`:'color:var(--text-dim);border-color:var(--border);'}" onchange="setTeamAlliance(${t.teamNum},this.value)" onclick="event.stopPropagation()">${allianceOptions}</select>
+            <div class="card-rank">#${i+1}</div>
+          </div>
         </div>
+        ${isTaken?`<div class="taken-overlay" style="background:${ALLIANCE_COLORS[takenNum]}22;border-color:${ALLIANCE_COLORS[takenNum]};">TAKEN · A${takenNum}</div>`:''}
         <div class="card-stats">
           <div class="stat-box">
             <div class="s-num">${t.avgScore}</div>
@@ -353,9 +364,14 @@ function renderAlliance() {
   }).join('');
 
   updateAllianceSlots();
+  renderDraftBoard();
 }
 
 function toggleAlliancePick(teamNum) {
+  if (takenByAlliance[teamNum]) {
+    showToast(`Team ${teamNum} is taken by Alliance ${takenByAlliance[teamNum]}`);
+    return;
+  }
   const idx = selectedAlliance.indexOf(teamNum);
   if (idx >= 0) {
     selectedAlliance[idx] = null;
@@ -365,6 +381,58 @@ function toggleAlliancePick(teamNum) {
     selectedAlliance[firstEmpty] = teamNum;
   }
   renderAlliance();
+}
+
+// Called by firebase-setup.js onSnapshot — applies shared alliance state from Firestore
+function applyAllianceState(state) {
+  takenByAlliance = (state && state.takenByAlliance) ? state.takenByAlliance : {};
+  renderAlliance();
+}
+
+function setTeamAlliance(teamNum, val) {
+  if (readOnly) { showToast('View-only mode — cannot change alliance assignments'); renderAlliance(); return; }
+  if (!val) {
+    delete takenByAlliance[teamNum];
+  } else {
+    takenByAlliance[teamNum] = parseInt(val);
+    const idx = selectedAlliance.indexOf(teamNum);
+    if (idx >= 0) { selectedAlliance[idx] = null; }
+  }
+  renderAlliance();
+  saveAllianceState(currentEvent, takenByAlliance).catch(() => showToast('⚠ Could not save alliance state'));
+}
+
+function renderDraftBoard() {
+  const board = document.getElementById('draftBoard');
+  if (!board) return;
+  const tmap = {};
+  aggregateTeams().forEach(t => { tmap[t.teamNum] = t; });
+
+  board.innerHTML = Array.from({length:8}, (_,i) => {
+    const n = i + 1;
+    const color = ALLIANCE_COLORS[n];
+    const allianceTeams = Object.entries(takenByAlliance)
+      .filter(([,v]) => v === n)
+      .map(([k]) => parseInt(k))
+      .sort((a,b) => {
+        const sa = tmap[a]?.avgScore ?? 0;
+        const sb = tmap[b]?.avgScore ?? 0;
+        return sb - sa;
+      });
+
+    return `
+      <div class="draft-col" style="--ac:${color}">
+        <div class="draft-col-header">Alliance ${n}</div>
+        <div class="draft-col-teams">
+          ${allianceTeams.length
+            ? allianceTeams.map(num => {
+                const t = tmap[num];
+                return `<div class="draft-chip" title="Avg ${t?.avgScore??'?'} pts">${num}<span class="draft-chip-score">${t?.avgScore??'?'}</span></div>`;
+              }).join('')
+            : '<div class="draft-empty">empty</div>'}
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function updateAllianceSlots() {
@@ -496,6 +564,8 @@ function clearAll() {
   clearAllEntriesFromFirestore(currentEvent)
     .then(() => {
       selectedAlliance = [null,null,null];
+      takenByAlliance = {};
+      clearAllianceState(currentEvent).catch(() => {});
       showToast('All data cleared');
       // onSnapshot will re-render automatically
     })
