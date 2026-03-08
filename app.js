@@ -346,7 +346,7 @@ function renderAlliance() {
   content.style.display = 'block';
 
   const climbLabel = ['—','L1','L2','L3'];
-  container.innerHTML = teams.slice(0,20).map((t,i)=>{
+  container.innerHTML = teams.map((t,i)=>{
     const isSelected = selectedAlliance.includes(t.teamNum);
     const takenNum = takenByAlliance[t.teamNum];
     const isTaken = !!takenNum;
@@ -358,10 +358,17 @@ function renderAlliance() {
 
     const allianceOptions = `<option value="">—</option>${Array.from({length:8},(_,n)=>`<option value="${n+1}" ${takenNum==n+1?'selected':''}>A${n+1}</option>`).join('')}`;
 
+    const teamName = ROSTER_MAP[t.teamNum]?.name || '';
     return `
       <div class="team-card ${isSelected?'selected':''} ${isTaken?'taken':''}" onclick="toggleAlliancePick(${t.teamNum})">
         <div class="card-header">
-          <div class="card-team-num">Team ${t.teamNum}</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <img class="card-avatar" src="${teamAvatar(t.teamNum)}" alt="" onerror="this.style.display='none'">
+            <div>
+              <div class="card-team-num">Team ${t.teamNum}</div>
+              ${teamName ? `<div class="card-team-name">${teamName}</div>` : ''}
+            </div>
+          </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <select class="alliance-num-select${isTaken?' taken':''}" style="${isTaken?`color:${ALLIANCE_COLORS[takenNum]};border-color:${ALLIANCE_COLORS[takenNum]};`:'color:var(--text-dim);border-color:var(--border);'}" onchange="setTeamAlliance(${t.teamNum},this.value)" onclick="event.stopPropagation()">${allianceOptions}</select>
             <div class="card-rank">#${i+1}</div>

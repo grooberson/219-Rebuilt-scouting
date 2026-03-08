@@ -659,11 +659,29 @@ td.notes-cell {
   align-items: flex-start;
   margin-bottom: 14px;
 }
+.card-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: contain;
+  background: var(--bg3);
+  flex-shrink: 0;
+}
 .card-team-num {
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 1.5rem;
   color: var(--text-bright);
+  line-height: 1.1;
+}
+.card-team-name {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
 }
 .card-rank {
   font-family: var(--font-mono);
