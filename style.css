@@ -462,6 +462,10 @@ textarea { resize: vertical; min-height: 80px; }
 }
 .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
 .btn-sm.danger:hover { border-color: var(--red); color: var(--red); }
+.btn-sm:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+.btn-sm.danger:not(:disabled) { border-color: var(--red); color: var(--red); }
+.btn-sm.danger:not(:disabled):hover { background: rgba(255,58,58,0.12); }
+#deleteConfirmInput.confirmed { border-color: var(--green); box-shadow: 0 0 0 2px rgba(0,230,118,0.25); }
 .btn-sm.success { border-color: var(--green); color: var(--green); }
 .btn-sm.success:hover { background: rgba(0,230,118,0.1); }
 .btn-sm.sched-tab-active { background: var(--accent); color: var(--bg); border-color: var(--accent); }

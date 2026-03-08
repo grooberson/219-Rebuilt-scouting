@@ -288,15 +288,44 @@ document.getElementById('teamModal').addEventListener('click', e => {
   if (e.target === document.getElementById('teamModal')) closeModal();
 });
 
+let _deleteConfirmKey = null;
+let _deleteConfirmCallback = null;
+
+function _openDeleteConfirm({ title, description, confirmKey, inputMode = 'text', buttonLabel = 'Delete', onConfirm }) {
+  _deleteConfirmKey = String(confirmKey);
+  _deleteConfirmCallback = onConfirm;
+  document.getElementById('deleteConfirmTitle').textContent = title;
+  document.getElementById('deleteConfirmDesc').textContent = description;
+  document.getElementById('deleteConfirmPrompt').textContent = confirmKey;
+  document.getElementById('deleteConfirmBtn').textContent = buttonLabel;
+  const input = document.getElementById('deleteConfirmInput');
+  input.value = '';
+  input.inputMode = inputMode;
+  input.classList.remove('confirmed');
+  document.getElementById('deleteConfirmBtn').disabled = true;
+  document.getElementById('deleteConfirmModal').classList.add('open');
+  input.focus();
+}
+
+function closeDeleteConfirm() {
+  document.getElementById('deleteConfirmModal').classList.remove('open');
+  _deleteConfirmKey = null;
+  _deleteConfirmCallback = null;
+}
+
 function deleteTeam(teamNum) {
-  if (!confirm(`Delete ALL entries for team ${teamNum} at ${currentEvent}? This cannot be undone.`)) return;
-  deleteTeamFromFirestore(teamNum, currentEvent)
-    .then(() => {
-      closeModal();
-      showToast('Deleted team ' + teamNum);
-      // onSnapshot will re-render tables automatically
-    })
-    .catch(() => showToast('⚠ Delete failed'));
+  _openDeleteConfirm({
+    title: 'Confirm Delete',
+    description: `This will permanently delete all scouting entries for team ${teamNum}. This cannot be undone.`,
+    confirmKey: teamNum,
+    inputMode: 'numeric',
+    buttonLabel: 'Delete All Entries',
+    onConfirm: () => {
+      deleteTeamFromFirestore(teamNum, currentEvent)
+        .then(() => { closeDeleteConfirm(); closeModal(); showToast('Deleted team ' + teamNum); })
+        .catch(() => showToast('⚠ Delete failed'));
+    }
+  });
 }
 
 // ===========================
@@ -560,16 +589,24 @@ function deleteEntry(entryId, teamNum) {
 }
 
 function clearAll() {
-  if (!confirm('Delete ALL scouting data? This cannot be undone.')) return;
-  clearAllEntriesFromFirestore(currentEvent)
-    .then(() => {
-      selectedAlliance = [null,null,null];
-      takenByAlliance = {};
-      clearAllianceState(currentEvent).catch(() => {});
-      showToast('All data cleared');
-      // onSnapshot will re-render automatically
-    })
-    .catch(() => showToast('⚠ Clear failed'));
+  _openDeleteConfirm({
+    title: 'Clear All Data',
+    description: `This will permanently delete ALL scouting data for event ${currentEvent}. This cannot be undone.`,
+    confirmKey: currentEvent,
+    inputMode: 'text',
+    buttonLabel: 'Clear All Data',
+    onConfirm: () => {
+      clearAllEntriesFromFirestore(currentEvent)
+        .then(() => {
+          selectedAlliance = [null,null,null];
+          takenByAlliance = {};
+          clearAllianceState(currentEvent).catch(() => {});
+          closeDeleteConfirm();
+          showToast('All data cleared');
+        })
+        .catch(() => showToast('⚠ Clear failed'));
+    }
+  });
 }
 
 // ===========================

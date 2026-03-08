@@ -519,6 +519,29 @@
   </div>
 </div>
 
+<!-- DESTRUCTIVE ACTION CONFIRMATION OVERLAY -->
+<div class="modal-overlay" id="deleteConfirmModal">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-header">
+      <div class="modal-title" id="deleteConfirmTitle">Confirm Delete</div>
+    </div>
+    <div class="modal-body">
+      <p id="deleteConfirmDesc" style="margin-bottom:14px;color:var(--text-dim);font-size:0.9rem;"></p>
+      <p style="margin-bottom:10px;font-size:0.85rem;">
+        Type <strong id="deleteConfirmPrompt" style="color:var(--accent2)"></strong> to confirm:
+      </p>
+      <input id="deleteConfirmInput" type="text"
+        style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:1rem;box-sizing:border-box;"
+        placeholder=""
+        oninput="const _ok = this.value.trim() === _deleteConfirmKey; document.getElementById('deleteConfirmBtn').disabled = !_ok; this.classList.toggle('confirmed', _ok);" />
+      <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn-sm" onclick="closeDeleteConfirm()">Cancel</button>
+        <button class="btn-sm danger" id="deleteConfirmBtn" disabled onclick="_deleteConfirmCallback()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
