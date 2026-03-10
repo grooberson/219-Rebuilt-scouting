@@ -559,6 +559,47 @@ function removeSlot(i) {
 }
 
 // ===========================
+// SCOUT REPORT
+// ===========================
+function showScoutReport() {
+  const entries = getData().filter(e => (e.event || 'NJWAS') === currentEvent);
+
+  if (!entries.length) {
+    showToast('No scouting entries for ' + currentEvent);
+    return;
+  }
+
+  // Group by scout name
+  const byScout = {};
+  entries.forEach(e => {
+    const name = (e.scout || '').trim() || '(unknown)';
+    if (!byScout[name]) byScout[name] = [];
+    byScout[name].push(e);
+  });
+
+  const scouts = Object.entries(byScout).sort((a, b) => b[1].length - a[1].length);
+
+  const html = scouts.map(([name, scoutEntries]) => {
+    const sorted = scoutEntries.slice().sort((a, b) => a.matchNum - b.matchNum);
+    const matchList = sorted.map(e =>
+      `<span class="info-chip" style="font-size:0.75rem;font-family:var(--font-mono);">M${e.matchNum}&thinsp;·&thinsp;T${e.teamNum}</span>`
+    ).join('');
+    return `
+      <div class="match-entry">
+        <div class="match-entry-header">
+          <span style="font-family:var(--font-display);font-weight:600;font-size:1rem;">${name}</span>
+          <span class="match-score">${scoutEntries.length} entr${scoutEntries.length === 1 ? 'y' : 'ies'}</span>
+        </div>
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;">${matchList}</div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('modalTitle').textContent = `Scout Report — ${currentEvent} · ${entries.length} total entr${entries.length === 1 ? 'y' : 'ies'}`;
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('teamModal').classList.add('open');
+}
+
+// ===========================
 // EXPORT / IMPORT
 // ===========================
 function exportCSV() {
