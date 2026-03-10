@@ -135,11 +135,24 @@ function aggregateTeams() {
 // RENDER TEAMS TABLE
 // ===========================
 let teamsData = [];
+let activeTagFilters = new Set();
+
+function toggleTagFilter(btn) {
+  const tag = btn.dataset.tag;
+  if (activeTagFilters.has(tag)) activeTagFilters.delete(tag);
+  else activeTagFilters.add(tag);
+  btn.classList.toggle('active', activeTagFilters.has(tag));
+  renderTeams();
+}
+
 function renderTeams() {
   teamsData = aggregateTeams();
   const search = (document.getElementById('teamSearch')?.value||'').trim();
   let filtered = teamsData;
   if (search) filtered = filtered.filter(t=>String(t.teamNum).includes(search));
+  if (activeTagFilters.size > 0) {
+    filtered = filtered.filter(t => [...activeTagFilters].every(tag => t[tag]));
+  }
   filtered.sort((a,b)=>{
     let av, bv;
     if (sortKey === 'officialRank') {
@@ -190,14 +203,23 @@ function renderTeams() {
         <div class="climb-seg ${t.bestClimb>=3?'lit':''}"></div>
       </div>`;
 
-    const lastNote = t.entries.slice(-1)[0]?.notes || '—';
+    const rawNote = t.entries.slice(-1)[0]?.notes || '';
+    const escapedNote = rawNote.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const noteCell = rawNote
+      ? `<td class="td-note-icon"><span class="note-icon" data-note="${escapedNote}">ⓘ</span></td>`
+      : `<td class="td-note-icon"></td>`;
 
     const or = officialRankings[t.teamNum];
     const frcRankCell = or
       ? `<td class="td-frc"><span class="frc-rank-num">#${or.rank}</span><span class="frc-rank-wl">${or.wins}W-${or.losses}L</span></td>`
       : `<td class="td-frc td-frc-empty">—</td>`;
     tr.innerHTML = `
-      <td class="team-num">${t.teamNum}</td>
+      <td class="team-num">
+        <div class="team-num-cell">
+          <img class="row-avatar" src="${teamAvatar(t.teamNum)}" alt="" onerror="this.style.display='none'">
+          ${t.teamNum}
+        </div>
+      </td>
       ${frcRankCell}
       <td style="font-family:var(--font-mono);color:var(--text-dim)">${t.matches}</td>
       <td class="score-cell">${t.avgScore}</td>
@@ -212,8 +234,8 @@ function renderTeams() {
           <div class="rp-dot ${rpDots[2]}" title="TRAVERSAL RP (50 tower pts)"></div>
         </div>
       </td>
-      <td>${tags.join('')}</td>
-      <td class="notes-cell">${lastNote}</td>
+      <td class="td-tags">${tags.join('')}</td>
+      ${noteCell}
     `;
     tbody.appendChild(tr);
   });

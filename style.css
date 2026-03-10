@@ -531,18 +531,115 @@ td.team-num {
   font-size: 1rem;
   color: var(--text-bright);
 }
+.team-num-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.row-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: contain;
+  flex-shrink: 0;
+  background: var(--bg2);
+}
 td.score-cell {
   font-family: var(--font-mono);
   color: var(--gold);
   font-weight: 700;
 }
-td.notes-cell {
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--text-dim);
+/* Tags cell — allow badges to wrap */
+td.td-tags {
+  white-space: normal;
+  min-width: 90px;
+  max-width: 180px;
+  line-height: 1.8;
+}
+
+/* Notes icon column */
+.th-notes-col {
+  width: 32px;
+  text-align: center;
+}
+td.td-note-icon {
+  width: 32px;
+  text-align: center;
+  padding: 0 8px;
+}
+.note-icon {
+  position: relative;
+  display: inline-block;
+  cursor: default;
+  font-size: 0.85rem;
+  color: var(--accent);
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.note-icon:hover { opacity: 1; }
+/* CSS tooltip */
+.note-icon::after {
+  content: attr(data-note);
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: 260px;
+  max-width: 80vw;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 8px 10px;
   font-size: 0.8rem;
-  white-space: nowrap;
+  font-family: var(--font-body);
+  white-space: pre-wrap;
+  color: var(--text);
+  text-align: left;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 200;
+  line-height: 1.5;
+}
+.note-icon:hover::after { opacity: 1; }
+
+/* Tag filter bar */
+.tag-filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 0 8px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.tag-filter-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-right: 2px;
+}
+.tag-filter-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0.45;
+  transition: opacity 0.15s, box-shadow 0.15s;
+  border: inherit;
+  background: inherit;
+}
+.tag-filter-chip:hover { opacity: 0.75; }
+.tag-filter-chip.active {
+  opacity: 1;
+  box-shadow: 0 0 0 2px currentColor;
 }
 
 .badge {

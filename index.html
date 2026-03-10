@@ -372,6 +372,16 @@
         <button class="btn-sm danger" onclick="clearAll()">✕ Clear All Data</button>
       </div>
     </div>
+    <div class="tag-filter-bar">
+      <span class="tag-filter-label">Filter:</span>
+      <button class="tag-filter-chip badge-blue" data-tag="hasStrFuelVolume" onclick="toggleTagFilter(this)">HIGH FUEL</button>
+      <button class="tag-filter-chip badge-green" data-tag="hasStrClimber" onclick="toggleTagFilter(this)">CLIMBER</button>
+      <button class="tag-filter-chip badge-blue" data-tag="hasStrConsistentAuto" onclick="toggleTagFilter(this)">AUTO</button>
+      <button class="tag-filter-chip badge-orange" data-tag="hasStrDefense" onclick="toggleTagFilter(this)">DEFENSE</button>
+      <button class="tag-filter-chip badge-red" data-tag="wkBroke" onclick="toggleTagFilter(this)">UNRELIABLE</button>
+      <button class="tag-filter-chip badge-red" data-tag="gotCard" onclick="toggleTagFilter(this)">CARDED</button>
+      <button class="tag-filter-chip badge-red" data-tag="wkScoredWrong" onclick="toggleTagFilter(this)">HUB ERR</button>
+    </div>
     <div class="teams-table-wrap">
       <table id="teamsTable">
         <thead>
@@ -386,7 +396,7 @@
             <th onclick="sortTeams('avgReliability')">Reliability</th>
             <th>RP Potential</th>
             <th>Tags</th>
-            <th>Notes</th>
+            <th class="th-notes-col" title="Latest scout note — hover ⓘ to read">Notes</th>
           </tr>
         </thead>
         <tbody id="teamsBody"></tbody>
