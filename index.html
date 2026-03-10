@@ -354,7 +354,14 @@
   <!-- ===== TEAMS VIEW ===== -->
   <div class="view" id="view-teams">
     <div class="teams-header">
-      <div class="teams-title">Team Rankings</div>
+      <div>
+        <div class="teams-title">Team Rankings</div>
+        <div class="teams-legend">
+          <span class="legend-frc">★ FRC Official</span>
+          <span class="legend-sep">·</span>
+          <span class="legend-scout">◎ Scouted</span>
+        </div>
+      </div>
       <div class="teams-controls">
         <input class="search-box" type="text" id="teamSearch" placeholder="Search team #..." oninput="renderTeams()">
         <button class="btn-sm" onclick="exportCSV()">↓ Export CSV</button>
@@ -370,6 +377,7 @@
         <thead>
           <tr>
             <th onclick="sortTeams('teamNum')">Team #</th>
+            <th class="th-frc" onclick="sortTeams('officialRank')">★ FRC Rank</th>
             <th onclick="sortTeams('matches')">Matches</th>
             <th onclick="sortTeams('avgScore')" class="sorted">Avg Score ↓</th>
             <th onclick="sortTeams('avgFuel')">Avg Fuel</th>

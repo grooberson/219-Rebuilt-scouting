@@ -1495,14 +1495,56 @@ td.notes-cell {
   line-height: 1.4;
   margin-top: 2px;
 }
-/* Official rank sub-label in teams table */
-.off-rank {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  color: var(--gold);
-  margin-top: 2px;
-  letter-spacing: 0.02em;
+/* FRC Official column header */
+.th-frc {
+  color: var(--gold) !important;
+  border-bottom: 2px solid var(--gold) !important;
   white-space: nowrap;
+}
+/* FRC Official column cells */
+.td-frc {
+  border-left: 2px solid color-mix(in srgb, var(--gold) 30%, transparent);
+  padding: 6px 10px;
+  text-align: center;
+  white-space: nowrap;
+}
+.td-frc-empty {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+.frc-rank-num {
+  display: block;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--gold);
+}
+.frc-rank-wl {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  margin-top: 1px;
+}
+/* Legend below page title */
+.teams-legend {
+  font-size: 0.72rem;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-frc {
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+.legend-sep {
+  color: var(--text-dim);
+}
+.legend-scout {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
 }
 @media (max-width: 600px) {
   .pill-name { display: none; }

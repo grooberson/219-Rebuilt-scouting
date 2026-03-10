@@ -141,7 +141,13 @@ function renderTeams() {
   let filtered = teamsData;
   if (search) filtered = filtered.filter(t=>String(t.teamNum).includes(search));
   filtered.sort((a,b)=>{
-    const av=a[sortKey]??0, bv=b[sortKey]??0;
+    let av, bv;
+    if (sortKey === 'officialRank') {
+      av = officialRankings[a.teamNum]?.rank ?? 9999;
+      bv = officialRankings[b.teamNum]?.rank ?? 9999;
+      return sortAsc ? bv-av : av-bv; // lower rank # = better, default descending shows #1 first
+    }
+    av=a[sortKey]??0; bv=b[sortKey]??0;
     return sortAsc ? av-bv : bv-av;
   });
 
@@ -187,11 +193,12 @@ function renderTeams() {
     const lastNote = t.entries.slice(-1)[0]?.notes || '—';
 
     const or = officialRankings[t.teamNum];
-    const rankBadge = or
-      ? `<div class="off-rank">#${or.rank} · ${or.wins}W-${or.losses}L</div>`
-      : '';
+    const frcRankCell = or
+      ? `<td class="td-frc"><span class="frc-rank-num">#${or.rank}</span><span class="frc-rank-wl">${or.wins}W-${or.losses}L</span></td>`
+      : `<td class="td-frc td-frc-empty">—</td>`;
     tr.innerHTML = `
-      <td class="team-num">${t.teamNum}${rankBadge}</td>
+      <td class="team-num">${t.teamNum}</td>
+      ${frcRankCell}
       <td style="font-family:var(--font-mono);color:var(--text-dim)">${t.matches}</td>
       <td class="score-cell">${t.avgScore}</td>
       <td style="font-family:var(--font-mono)">${t.avgFuel}</td>
