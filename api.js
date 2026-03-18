@@ -39,6 +39,8 @@ async function loadOfficialRankings() {
   } catch (e) {
     console.warn('FRC API rankings unavailable:', e);
   }
+  // Kick off Statbotics fetch in parallel (no-op if already cached for this event)
+  if (typeof loadStatboticsData === 'function') loadStatboticsData(currentEvent);
 }
 
 // ===========================
@@ -358,6 +360,7 @@ function switchEvent(code) {
   _rankLastLoad = 0;
   scheduleData = [];
   scoreDetailData = {};
+  if (typeof clearStatboticsCache === 'function') clearStatboticsCache(currentEvent);
   // Update schedule section title
   const titleEl = document.getElementById('schedTitle');
   if (titleEl) titleEl.textContent = `Match Schedule — ${code} 2026`;

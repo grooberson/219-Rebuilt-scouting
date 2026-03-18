@@ -126,7 +126,34 @@ function aggregateTeams() {
       wkBroke: anyTrue('wkBroke'),
       wkScoredWrong: anyTrue('wkScoredWrong'),
       gotCard: anyTrue('gotCard'),
-      entries
+      entries,
+      // Statbotics fields (null if not yet loaded or team not found)
+      ...(() => {
+        const sb = (typeof getStatbotics === 'function') ? getStatbotics(parseInt(num)) : null;
+        if (!sb) return { statEpa: null };
+        const bp = sb.epa?.breakdown || {};
+        const ranks = sb.epa?.ranks || {};
+        return {
+          statEpa:           sb.epa?.total_points?.mean ?? null,
+          statEpaSd:         sb.epa?.total_points?.sd   ?? null,
+          statNormEpa:       sb.epa?.norm               ?? null,
+          statAutoEpa:       bp.auto_points             ?? null,
+          statTeleopEpa:     bp.teleop_points           ?? null,
+          statEndgameEpa:    bp.endgame_points          ?? null,
+          statEnergizedRp:   bp.energized_rp            ?? null,
+          statSuperchargedRp:bp.supercharged_rp         ?? null,
+          statTraversalRp:   bp.traversal_rp            ?? null,
+          statWinRate:       sb.record?.winrate         ?? null,
+          statWins:          sb.record?.wins            ?? null,
+          statLosses:        sb.record?.losses          ?? null,
+          statNatRank:       ranks.total?.rank          ?? null,
+          statNatPct:        ranks.total?.percentile    ?? null,
+          statStateRank:     ranks.state?.rank          ?? null,
+          statStatePct:      ranks.state?.percentile    ?? null,
+          statDistrictRank:  ranks.district?.rank       ?? null,
+          statDistrictPct:   ranks.district?.percentile ?? null,
+        };
+      })()
     };
   });
 }
@@ -159,6 +186,11 @@ function renderTeams() {
       av = officialRankings[a.teamNum]?.rank ?? 9999;
       bv = officialRankings[b.teamNum]?.rank ?? 9999;
       return sortAsc ? bv-av : av-bv; // lower rank # = better, default descending shows #1 first
+    }
+    if (sortKey === 'statEpa') {
+      av = a.statEpa ?? -1;
+      bv = b.statEpa ?? -1;
+      return sortAsc ? av-bv : bv-av;
     }
     av=a[sortKey]??0; bv=b[sortKey]??0;
     return sortAsc ? av-bv : bv-av;
@@ -213,6 +245,14 @@ function renderTeams() {
     const frcRankCell = or
       ? `<td class="td-frc"><span class="frc-rank-num">#${or.rank}</span><span class="frc-rank-wl">${or.wins}W-${or.losses}L</span></td>`
       : `<td class="td-frc td-frc-empty">—</td>`;
+
+    const epaCell = t.statEpa != null
+      ? `<td class="td-epa">
+           <span class="epa-val" style="color:${epaColor(t.statEpa)};">${t.statEpa.toFixed(1)}</span>
+           ${t.statEpaSd != null ? `<span class="epa-sd">±${t.statEpaSd.toFixed(1)}</span>` : ''}
+         </td>`
+      : `<td class="td-epa td-epa-empty">—</td>`;
+
     tr.innerHTML = `
       <td class="team-num">
         <div class="team-num-cell">
@@ -221,6 +261,7 @@ function renderTeams() {
         </div>
       </td>
       ${frcRankCell}
+      ${epaCell}
       <td style="font-family:var(--font-mono);color:var(--text-dim)">${t.matches}</td>
       <td class="score-cell">${t.avgScore}</td>
       <td style="font-family:var(--font-mono)">${t.avgFuel}</td>
@@ -258,7 +299,10 @@ function openTeamModal(teamNum) {
   const teams = aggregateTeams();
   const team = teams.find(t=>t.teamNum===teamNum);
   if (!team) return;
-  document.getElementById('modalTitle').textContent = `Team ${teamNum} — ${team.matches} Match${team.matches!==1?'es':''}`;
+  const sbData = (typeof getStatbotics === 'function') ? getStatbotics(teamNum) : null;
+  const distRankStr = sbData?.epa?.ranks?.district?.rank != null
+    ? ` · FMA #${sbData.epa.ranks.district.rank}` : '';
+  document.getElementById('modalTitle').textContent = `Team ${teamNum} — ${team.matches} Match${team.matches!==1?'es':''}${distRankStr}`;
   const climbLabel = ['—','L1','L2','L3'];
   const towerPts = { 0:0, 1:10, 2:20, 3:30 };
 
@@ -302,6 +346,7 @@ function openTeamModal(teamNum) {
       <div class="stat-box"><div class="s-num">${team.avgReliability||'—'}</div><div class="s-lbl">Avg Reliability</div></div>
       <div class="stat-box"><div class="s-num">${team.avgTowerPts}</div><div class="s-lbl">Avg Tower Pts</div></div>
     </div>
+    ${(typeof renderStatboticsModalSection === 'function') ? renderStatboticsModalSection(teamNum) : ''}
     <div class="panel-title" style="margin-bottom:14px;">Match History</div>
     ${matchesHtml}
     <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">
@@ -402,13 +447,15 @@ function renderAlliance() {
 
     const teamName = ROSTER_MAP[t.teamNum]?.name || '';
     const hasPref = preferredRanks[t.teamNum] != null;
+    const distBadge = t.statDistrictRank != null
+      ? `<span class="card-dist-rank">FMA #${t.statDistrictRank}</span>` : '';
     return `
       <div class="team-card ${isSelected?'selected':''} ${isTaken?'taken':''}" onclick="toggleAlliancePick(${t.teamNum})">
         <div class="card-header">
           <div style="display:flex;align-items:center;gap:10px;">
             <img class="card-avatar" src="${teamAvatar(t.teamNum)}" alt="" onerror="this.style.display='none'">
             <div>
-              <div class="card-team-num">Team ${t.teamNum}</div>
+              <div class="card-team-num">Team ${t.teamNum} ${distBadge}</div>
               ${teamName ? `<div class="card-team-name">${teamName}</div>` : ''}
             </div>
           </div>
@@ -434,6 +481,14 @@ function renderAlliance() {
           <div class="stat-box">
             <div class="s-num">${t.avgReliability||'—'}</div>
             <div class="s-lbl">Reliability</div>
+          </div>
+          <div class="stat-box">
+            <div class="s-num" style="color:${(typeof epaColor==='function')?epaColor(t.statEpa):'inherit'};">${t.statEpa != null ? t.statEpa.toFixed(1) : '—'}</div>
+            <div class="s-lbl">◈ EPA</div>
+          </div>
+          <div class="stat-box">
+            <div class="s-num" style="font-size:0.85rem;">${t.statWinRate != null ? Math.round(t.statWinRate*100)+'%' : '—'}</div>
+            <div class="s-lbl">Win Rate</div>
           </div>
         </div>
         ${tags.map(tag=>`<span class="info-chip ${tag==='HIGH FUEL'||tag==='CLIMBER'?'lit':''}">${tag}</span>`).join('')}

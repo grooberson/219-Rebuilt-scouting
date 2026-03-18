@@ -360,6 +360,8 @@
           <span class="legend-frc">★ FRC Official</span>
           <span class="legend-sep">·</span>
           <span class="legend-scout">◎ Scouted</span>
+          <span class="legend-sep">·</span>
+          <span class="legend-epa">◈ Statbotics EPA</span>
         </div>
       </div>
       <div class="teams-controls">
@@ -388,6 +390,7 @@
           <tr>
             <th onclick="sortTeams('teamNum')">Team #</th>
             <th class="th-frc" onclick="sortTeams('officialRank')">★ FRC Rank</th>
+            <th class="th-epa" onclick="sortTeams('statEpa')">◈ EPA</th>
             <th onclick="sortTeams('matches')">Matches</th>
             <th onclick="sortTeams('avgScore')" class="sorted">Avg Score ↓</th>
             <th onclick="sortTeams('avgFuel')">Avg Fuel</th>
@@ -525,6 +528,10 @@
   Event data provided by <a href="https://frc-events.firstinspires.org/services/API"
     target="_blank"
     style="color: var(--text-dim); text-decoration: underline;">FIRST</a>
+  &nbsp;·&nbsp;
+  EPA metrics by <a href="https://www.statbotics.io"
+    target="_blank"
+    style="color: var(--text-dim); text-decoration: underline;">Statbotics</a>
 </footer>
 
 <!-- TEAM DETAIL MODAL -->
@@ -568,6 +575,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-auth-compat.js"></script>
 <script src="firebase-setup.js"></script>
+<script src="statbotics.js"></script>
 <script src="api.js"></script>
 <script src="form.js"></script>
 <script src="app.js"></script>

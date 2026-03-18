@@ -1781,3 +1781,210 @@ body.read-only #view-scout #allianceColor { pointer-events: none; opacity: 0.55;
   letter-spacing: 0.06em;
 }
 body.read-only .readonly-notice { display: block; }
+
+/* ============================================================
+   STATBOTICS INTEGRATION STYLES
+   ============================================================ */
+
+/* ---- Teams table EPA column ---- */
+.th-epa {
+  white-space: nowrap;
+  color: var(--accent);
+}
+.td-epa {
+  font-family: var(--font-mono);
+  min-width: 72px;
+  white-space: nowrap;
+}
+.td-epa-empty {
+  color: var(--text-dim);
+}
+.epa-val {
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: block;
+}
+.epa-sd {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  display: block;
+  margin-top: 1px;
+}
+
+/* ---- Legend ---- */
+.legend-epa {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+/* ---- Statbotics modal panel ---- */
+.statbotics-panel {
+  background: var(--bg3);
+  border: 1px solid var(--border-bright);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  position: relative;
+}
+.statbotics-panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.statbotics-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.statbotics-epa-total {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.statbotics-epa-total .epa-sd {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  display: inline;
+}
+
+/* ---- Rank badges row ---- */
+.stat-rank-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.rank-badge {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.rank-badge-val {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-bright);
+  white-space: nowrap;
+}
+.rank-badge-pct {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+}
+
+/* ---- Win rate line ---- */
+.stat-winrate {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+
+/* ---- EPA breakdown bars ---- */
+.epa-breakdown,
+.rp-prob-section {
+  margin-bottom: 12px;
+}
+.epa-breakdown-title {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.epa-bar-row {
+  display: grid;
+  grid-template-columns: 72px 1fr 46px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.epa-bar-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  text-align: right;
+}
+.epa-bar-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg2);
+  overflow: hidden;
+}
+.epa-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+.epa-bar-val {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+/* ---- RP probability indicators ---- */
+.rp-prob-row {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.rp-prob-item {
+  display: grid;
+  grid-template-columns: 130px 1fr 36px;
+  align-items: center;
+  gap: 8px;
+}
+.rp-prob-name {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.rp-prob-track {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--bg2);
+  overflow: hidden;
+}
+.rp-prob-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+.rp-prob-pct {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+/* ---- Alliance card additions ---- */
+.card-dist-rank {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--accent);
+  background: rgba(0,212,255,0.08);
+  border: 1px solid rgba(0,212,255,0.25);
+  border-radius: 10px;
+  padding: 1px 7px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+/* ---- Responsive: hide EPA column on small screens ---- */
+@media (max-width: 768px) {
+  .th-epa, .td-epa { display: none; }
+}
