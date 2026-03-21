@@ -97,16 +97,21 @@ async function loadScoreDetails() {
     if (!res.ok) return;
     const data = await res.json();
     scoreDetailData = {};
+    let needsRerender = false;
     (data.MatchScores || []).forEach(ms => {
       const red  = (ms.alliances || []).find(a => a.alliance === 'Red');
       const blue = (ms.alliances || []).find(a => a.alliance === 'Blue');
       if (red || blue) {
+        if (!scoreDetailData[ms.matchNumber]) needsRerender = true;
         scoreDetailData[ms.matchNumber] = { red, blue };
         // Update any already-rendered panel in place (avoids full re-render)
         const panel = document.getElementById('score-detail-' + ms.matchNumber);
         if (panel) panel.innerHTML = renderScoreBreakdown(red, blue);
       }
     });
+    // Re-render if we learned about newly completed matches (e.g. matches missing
+    // scoreRedFinal in the hybrid endpoint but present in the scores endpoint)
+    if (needsRerender) renderSchedule();
   } catch(e) {
     console.warn('FRC score details unavailable:', e);
   }
@@ -164,8 +169,11 @@ function renderSchedule() {
     </div>`;
     return;
   }
-  const completed = scheduleData.filter(m => m.postResultTime && m.scoreRedFinal !== null && m.scoreRedFinal !== undefined);
-  const upcoming  = scheduleData.filter(m => !m.postResultTime || m.scoreRedFinal === null || m.scoreRedFinal === undefined);
+  const isMatchComplete = m =>
+    (m.postResultTime && m.scoreRedFinal !== null && m.scoreRedFinal !== undefined) ||
+    scoreDetailData[m.matchNumber] !== undefined;
+  const completed = scheduleData.filter(isMatchComplete);
+  const upcoming  = scheduleData.filter(m => !isMatchComplete(m));
   let html = '';
   if (scheduleView === 'completed') {
     if (completed.length) {
@@ -192,13 +200,16 @@ function renderMatchBlock(match, isCompleted) {
 
   let headerRight;
   if (isCompleted) {
-    const rWon = match.scoreRedFinal > match.scoreBlueFinal;
-    const bWon = match.scoreBlueFinal > match.scoreRedFinal;
+    const detail = scoreDetailData[match.matchNumber];
+    const redScore  = match.scoreRedFinal  ?? detail?.red?.totalPoints;
+    const blueScore = match.scoreBlueFinal ?? detail?.blue?.totalPoints;
+    const rWon = redScore > blueScore;
+    const bWon = blueScore > redScore;
     headerRight = `<div style="display:flex;align-items:center;gap:10px;">
       <div class="match-score-row">
-        <span class="match-score-val red-score ${rWon ? 'winner' : ''}">${match.scoreRedFinal}</span>
+        <span class="match-score-val red-score ${rWon ? 'winner' : ''}">${redScore ?? '—'}</span>
         <span class="match-score-sep">–</span>
-        <span class="match-score-val blue-score ${bWon ? 'winner' : ''}">${match.scoreBlueFinal}</span>
+        <span class="match-score-val blue-score ${bWon ? 'winner' : ''}">${blueScore ?? '—'}</span>
       </div>
       <span class="score-expand-btn">▾</span>
     </div>`;
