@@ -49,8 +49,10 @@ async function loadOfficialRankings() {
 let scheduleData = [];
 let scoreDetailData = {}; // matchNumber → { red: {...}, blue: {...} }
 let scheduleView = 'upcoming'; // 'upcoming' | 'completed'
+let scheduleType = 'qual';    // 'practice' | 'qual' | 'playoff'
 let _schedRefreshTimer = null;
 let _schedCountdown = 0;
+let _schedGeneration = 0;
 
 // Populated once initRosterMap() is called for the current event
 const ROSTER_MAP = {};
@@ -61,18 +63,26 @@ async function loadSchedule(isAutoRefresh = false) {
     document.getElementById('schedCountdown').textContent = '';
   }
   clearInterval(_schedRefreshTimer);
+  _schedRefreshTimer = null;
+  const gen = ++_schedGeneration;
   try {
-    const res = await fetch(`${FRC_BASE}/${FRC_YEAR}/schedule/${getFrcEvent()}/qual/hybrid`, {
+    // The /hybrid endpoint only exists for qual and playoff; practice uses the base schedule endpoint
+    const url = scheduleType === 'practice'
+      ? `${FRC_BASE}/${FRC_YEAR}/schedule/${getFrcEvent()}?tournamentLevel=Practice`
+      : `${FRC_BASE}/${FRC_YEAR}/schedule/${getFrcEvent()}/${scheduleType}/hybrid`;
+    const res = await fetch(url, {
       headers: { 'Authorization': _getAuth(), 'Accept': 'application/json' }
     });
     if (!res.ok) throw new Error(res.status);
     const data = await res.json();
+    if (gen !== _schedGeneration) return; // superseded by a newer call
     scheduleData = data.Schedule || [];
     renderSchedule();
     loadScoreDetails(); // fetch breakdown data in the background
     document.getElementById('schedStatus').textContent =
       'Updated ' + new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
   } catch (e) {
+    if (gen !== _schedGeneration) return;
     document.getElementById('schedStatus').textContent = '⚠ FRC API unavailable';
     console.warn('FRC schedule fetch failed:', e);
   }
@@ -84,6 +94,7 @@ async function loadSchedule(isAutoRefresh = false) {
     if (el) el.textContent = `Refresh in ${_schedCountdown}s`;
     if (_schedCountdown <= 0) {
       clearInterval(_schedRefreshTimer);
+      _schedRefreshTimer = null;
       loadSchedule(true);
     }
   }, 1000);
@@ -91,7 +102,7 @@ async function loadSchedule(isAutoRefresh = false) {
 
 async function loadScoreDetails() {
   try {
-    const res = await fetch(`${FRC_BASE}/${FRC_YEAR}/scores/${getFrcEvent()}/qual`, {
+    const res = await fetch(`${FRC_BASE}/${FRC_YEAR}/scores/${getFrcEvent()}/${scheduleType}`, {
       headers: { 'Authorization': _getAuth(), 'Accept': 'application/json' }
     });
     if (!res.ok) return;
@@ -158,6 +169,26 @@ function setScheduleView(view) {
   renderSchedule();
 }
 
+function setScheduleType(type) {
+  scheduleType = type;
+  ['practice', 'qual', 'playoff'].forEach(t => {
+    const btn = document.getElementById('schedType-' + t);
+    if (btn) btn.classList.toggle('sched-tab-active', t === type);
+  });
+  const labels = { practice: 'Practice', qual: 'Qualification', playoff: 'Playoff' };
+  const titleEl = document.getElementById('schedTitle');
+  if (titleEl) titleEl.textContent = `${labels[type]} Schedule — ${getFrcEvent()} 2026`;
+  scheduleData = [];
+  scoreDetailData = {};
+  // Immediately clear content and show a loading spinner
+  const container = document.getElementById('scheduleList');
+  if (container) container.innerHTML = `<div class="empty-state" style="padding:40px 0;">
+    <div class="sched-spinner"></div>
+    <div style="color:var(--text-dim);font-size:0.85rem;margin-top:14px;">Loading ${labels[type]} schedule…</div>
+  </div>`;
+  loadSchedule();
+}
+
 function renderSchedule() {
   const container = document.getElementById('scheduleList');
   if (!container) return;
@@ -191,6 +222,20 @@ function renderSchedule() {
     }
   }
   container.innerHTML = html;
+}
+
+function getMatchLabel(match) {
+  if (scheduleType === 'practice') return `P${match.matchNumber}`;
+  if (scheduleType === 'playoff') {
+    // Abbreviate descriptions like "Semifinal 1 Match 2" → "SF1-2", "Final 1 Match 1" → "F1-1"
+    const desc = match.description || '';
+    const sf = desc.match(/Semifinal\s+(\d+)\s+Match\s+(\d+)/i);
+    if (sf) return `SF${sf[1]}-${sf[2]}`;
+    const f = desc.match(/Final\s+(?:\d+\s+)?Match\s+(\d+)/i);
+    if (f) return `F1-${f[1]}`;
+    return desc || `PO${match.matchNumber}`;
+  }
+  return `Q${match.matchNumber}`;
 }
 
 function renderMatchBlock(match, isCompleted) {
@@ -241,7 +286,7 @@ function renderMatchBlock(match, isCompleted) {
 
   return `<div class="match-block ${isCompleted ? 'completed' : 'upcoming'}">
     <div class="match-block-header" ${headerAttrs}>
-      <span class="match-block-num">Q${match.matchNumber}</span>
+      <span class="match-block-num">${getMatchLabel(match)}</span>
       ${headerRight}
     </div>
     <div class="match-teams-grid">

@@ -1437,6 +1437,19 @@ td.td-note-icon {
   border-bottom: 1px solid var(--border);
   margin-bottom: 10px;
 }
+.sched-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: sched-spin 0.7s linear infinite;
+  margin: 0 auto;
+}
+@keyframes sched-spin {
+  to { transform: rotate(360deg); }
+}
+
 .match-block {
   background: var(--panel);
   border: 1px solid var(--border);

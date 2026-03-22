@@ -501,6 +501,11 @@
           <button class="btn-sm" onclick="loadSchedule()">↺ Refresh</button>
         </div>
       </div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button id="schedType-practice" class="btn-sm" onclick="setScheduleType('practice')">Practice</button>
+        <button id="schedType-qual" class="btn-sm sched-tab-active" onclick="setScheduleType('qual')">Qual</button>
+        <button id="schedType-playoff" class="btn-sm" onclick="setScheduleType('playoff')">Playoff</button>
+      </div>
       <div style="display:flex;gap:6px;margin-bottom:12px;">
         <button id="schedToggleUpcoming" class="btn-sm sched-tab-active" onclick="setScheduleView('upcoming')">Upcoming</button>
         <button id="schedToggleCompleted" class="btn-sm" onclick="setScheduleView('completed')">Completed</button>
