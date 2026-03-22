@@ -13,6 +13,116 @@ function _getAuth() {
 const FRC_BASE = 'https://frc-api.firstinspires.org/v3.0';
 const FRC_YEAR = '2026';
 
+// ===========================
+// THE BLUE ALLIANCE API
+// ===========================
+// Used for qual and playoff schedules (richer data, scores included in one call).
+// Practice matches are not tracked by TBA — those still use the FRC API.
+// Key XOR-obfuscated with: TBA-2026-219-REBUILT
+const TBA_BASE = 'https://www.thebluealliance.com/api/v3';
+const _TK = 'TBA-2026-219-REBUILT';
+const _TC = '301a31445f796405665e62715b3d0f242c38233c661024494b5c77445c417e406a2728062508232e33330f4b4268476c7d6b5a707c131f2a05257f0e2c17381c';
+function _getTbaKey() {
+  if (!_TC) return '';
+  return _TC.match(/.{2}/g).map((h, i) =>
+    String.fromCharCode(parseInt(h, 16) ^ _TK.charCodeAt(i % _TK.length))
+  ).join('');
+}
+// TBA event key = year + lowercase FRC event code (e.g. "2026njwas")
+function getTbaEventKey() { return `${FRC_YEAR}${getFrcEvent().toLowerCase()}`; }
+
+// Normalize a TBA score_breakdown alliance to a common internal schema
+function _normalizeTbaBreakdown(bd, color) {
+  if (!bd || !bd[color]) return null;
+  const a = bd[color];
+  return {
+    autoPoints:    a.autoPoints    ?? a.autoCoralPoints    ?? null,
+    teleopPoints:  a.teleopPoints  ?? a.teleopCoralPoints  ?? null,
+    endgamePoints: a.endGameBargePoints ?? a.bargePoints ?? a.endGamePoints ?? null,
+    foulPoints:    a.foulPoints    ?? null,
+    totalPoints:   a.totalPoints   ?? null,
+    rp:            a.rp            ?? null,
+  };
+}
+
+// Normalize a FRC API scores-endpoint alliance to the same internal schema
+function _normalizeFrcBreakdown(alliance) {
+  if (!alliance) return null;
+  return {
+    autoPoints:    alliance.totalAutoPoints    ?? null,
+    teleopPoints:  alliance.totalTeleopPoints  ?? null,
+    endgamePoints: alliance.endGameBargePoints ?? alliance.endGameTowerPoints ?? alliance.endGamePoints ?? null,
+    foulPoints:    alliance.foulPoints         ?? null,
+    totalPoints:   alliance.totalPoints        ?? null,
+    rp:            alliance.rp                 ?? null,
+  };
+}
+
+// Convert a single TBA match object into the internal match format used by renderSchedule
+function _normalizeTbaMatch(m) {
+  const redKeys  = m.alliances?.red?.team_keys  || [];
+  const blueKeys = m.alliances?.blue?.team_keys || [];
+  const redSurr  = m.alliances?.red?.surrogate_team_keys  || [];
+  const blueSurr = m.alliances?.blue?.surrogate_team_keys || [];
+  const teams = [
+    ...redKeys.map( (k, i) => ({ teamNumber: parseInt(k.slice(3)), station: `Red${i+1}`,  surrogate: redSurr.includes(k)  })),
+    ...blueKeys.map((k, i) => ({ teamNumber: parseInt(k.slice(3)), station: `Blue${i+1}`, surrogate: blueSurr.includes(k) })),
+  ];
+
+  const cl = m.comp_level;
+  let description = '';
+  if      (cl === 'sf') description = `Semifinal ${m.set_number} Match ${m.match_number}`;
+  else if (cl === 'f')  description = `Final 1 Match ${m.match_number}`;
+  else if (cl === 'qf') description = `Quarterfinal ${m.set_number} Match ${m.match_number}`;
+  else if (cl === 'ef') description = `Octofinal ${m.set_number} Match ${m.match_number}`;
+
+  // Unique integer: qual → match_number; playoff → set * 100 + match (avoids collisions)
+  const matchNumber = cl === 'qm' ? m.match_number : m.set_number * 100 + m.match_number;
+
+  const isPlayed = m.actual_time != null;
+  return {
+    matchNumber,
+    description,
+    startTime: m.time ? new Date(m.time * 1000).toISOString() : null,
+    teams,
+    postResultTime:  isPlayed ? new Date(m.actual_time * 1000).toISOString() : null,
+    scoreRedFinal:   isPlayed ? (m.alliances?.red?.score  ?? null) : null,
+    scoreBlueFinal:  isPlayed ? (m.alliances?.blue?.score ?? null) : null,
+    _tbaBreakdown:   m.score_breakdown || null,
+  };
+}
+
+// Fetch qual or playoff matches from TBA; returns { scheduleData, scoreDetailData }
+async function _fetchFromTba() {
+  const url = `${TBA_BASE}/event/${getTbaEventKey()}/matches`;
+  const res = await fetch(url, { headers: { 'X-TBA-Auth-Key': _getTbaKey() } });
+  if (!res.ok) throw new Error(res.status);
+  const raw = await res.json();
+
+  const isPlayoff = scheduleType === 'playoff';
+  const filtered = raw.filter(m => isPlayoff ? m.comp_level !== 'qm' : m.comp_level === 'qm');
+  const matches = filtered
+    .map(_normalizeTbaMatch)
+    .sort((a, b) => {
+      // Playoff: chronological by scheduled time; qual: by match number
+      if (isPlayoff && a.startTime && b.startTime)
+        return new Date(a.startTime) - new Date(b.startTime);
+      return a.matchNumber - b.matchNumber;
+    });
+
+  // Pre-populate score detail from TBA breakdown (no separate fetch needed)
+  const scores = {};
+  matches.forEach(m => {
+    if (m._tbaBreakdown && m.postResultTime) {
+      scores[m.matchNumber] = {
+        red:  _normalizeTbaBreakdown(m._tbaBreakdown, 'red'),
+        blue: _normalizeTbaBreakdown(m._tbaBreakdown, 'blue'),
+      };
+    }
+  });
+  return { scheduleData: matches, scoreDetailData: scores };
+}
+
 // Current active event — persisted across sessions
 let currentEvent = localStorage.getItem('rebuilt_event') || 'NJWAS';
 function getFrcEvent() { return currentEvent; }
@@ -66,25 +176,33 @@ async function loadSchedule(isAutoRefresh = false) {
   _schedRefreshTimer = null;
   const gen = ++_schedGeneration;
   try {
-    // The /hybrid endpoint only exists for qual and playoff; practice uses the base schedule endpoint
-    const url = scheduleType === 'practice'
-      ? `${FRC_BASE}/${FRC_YEAR}/schedule/${getFrcEvent()}?tournamentLevel=Practice`
-      : `${FRC_BASE}/${FRC_YEAR}/schedule/${getFrcEvent()}/${scheduleType}/hybrid`;
-    const res = await fetch(url, {
-      headers: { 'Authorization': _getAuth(), 'Accept': 'application/json' }
-    });
-    if (!res.ok) throw new Error(res.status);
-    const data = await res.json();
-    if (gen !== _schedGeneration) return; // superseded by a newer call
-    scheduleData = data.Schedule || [];
-    renderSchedule();
-    loadScoreDetails(); // fetch breakdown data in the background
+    if (scheduleType === 'practice') {
+      // TBA does not track practice matches — use FRC API
+      const url = `${FRC_BASE}/${FRC_YEAR}/schedule/${getFrcEvent()}?tournamentLevel=Practice`;
+      const res = await fetch(url, {
+        headers: { 'Authorization': _getAuth(), 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error(res.status);
+      const data = await res.json();
+      if (gen !== _schedGeneration) return;
+      scheduleData = data.Schedule || [];
+      renderSchedule();
+      loadScoreDetails(); // fetch scores separately for practice
+    } else {
+      // TBA for qual/playoff — single call includes teams + scores + breakdown
+      const tba = await _fetchFromTba();
+      if (gen !== _schedGeneration) return;
+      scheduleData  = tba.scheduleData;
+      scoreDetailData = tba.scoreDetailData;
+      renderSchedule();
+      // No loadScoreDetails needed — TBA data already has scores
+    }
     document.getElementById('schedStatus').textContent =
       'Updated ' + new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
   } catch (e) {
     if (gen !== _schedGeneration) return;
-    document.getElementById('schedStatus').textContent = '⚠ FRC API unavailable';
-    console.warn('FRC schedule fetch failed:', e);
+    document.getElementById('schedStatus').textContent = '⚠ Schedule unavailable';
+    console.warn('Schedule fetch failed:', e);
   }
   // Start 60-second auto-refresh countdown
   _schedCountdown = 60;
@@ -101,33 +219,36 @@ async function loadSchedule(isAutoRefresh = false) {
 }
 
 async function loadScoreDetails() {
+  // Only called for practice — qual/playoff scores come from TBA in one shot
+  if (scheduleType !== 'practice') return;
   try {
-    const res = await fetch(`${FRC_BASE}/${FRC_YEAR}/scores/${getFrcEvent()}/${scheduleType}`, {
+    const res = await fetch(`${FRC_BASE}/${FRC_YEAR}/scores/${getFrcEvent()}/practice`, {
       headers: { 'Authorization': _getAuth(), 'Accept': 'application/json' }
     });
     if (!res.ok) return;
     const data = await res.json();
-    scoreDetailData = {};
     let needsRerender = false;
     (data.MatchScores || []).forEach(ms => {
-      const red  = (ms.alliances || []).find(a => a.alliance === 'Red');
-      const blue = (ms.alliances || []).find(a => a.alliance === 'Blue');
-      if (red || blue) {
+      const redRaw  = (ms.alliances || []).find(a => a.alliance === 'Red');
+      const blueRaw = (ms.alliances || []).find(a => a.alliance === 'Blue');
+      if (redRaw || blueRaw) {
+        const red  = _normalizeFrcBreakdown(redRaw);
+        const blue = _normalizeFrcBreakdown(blueRaw);
         if (!scoreDetailData[ms.matchNumber]) needsRerender = true;
         scoreDetailData[ms.matchNumber] = { red, blue };
-        // Update any already-rendered panel in place (avoids full re-render)
+        // Update any already-rendered panel in place
         const panel = document.getElementById('score-detail-' + ms.matchNumber);
         if (panel) panel.innerHTML = renderScoreBreakdown(red, blue);
       }
     });
-    // Re-render if we learned about newly completed matches (e.g. matches missing
-    // scoreRedFinal in the hybrid endpoint but present in the scores endpoint)
     if (needsRerender) renderSchedule();
   } catch(e) {
-    console.warn('FRC score details unavailable:', e);
+    console.warn('FRC practice score details unavailable:', e);
   }
 }
 
+// Accepts normalized breakdown objects: { autoPoints, teleopPoints, endgamePoints,
+//   foulPoints, totalPoints, rp } — produced by _normalizeTbaBreakdown/_normalizeFrcBreakdown
 function renderScoreBreakdown(red, blue) {
   const row = (label, rVal, bVal, bold) => `
     <div class="sb-row${bold ? ' sb-total' : ''}">
@@ -141,13 +262,13 @@ function renderScoreBreakdown(red, blue) {
       <span class="sb-hdr red-col">RED</span>
       <span class="sb-hdr blue-col">BLUE</span>
     </div>
-    ${row('Auto', red?.totalAutoPoints, blue?.totalAutoPoints)}
-    ${row('Teleop', red?.totalTeleopPoints, blue?.totalTeleopPoints)}
-    ${row('Endgame', red?.endGameTowerPoints, blue?.endGameTowerPoints)}
-    ${row('Penalties', red?.foulPoints, blue?.foulPoints)}
+    ${row('Auto',     red?.autoPoints,    blue?.autoPoints)}
+    ${row('Teleop',   red?.teleopPoints,  blue?.teleopPoints)}
+    ${row('Endgame',  red?.endgamePoints, blue?.endgamePoints)}
+    ${row('Penalties',red?.foulPoints,    blue?.foulPoints)}
     <div class="sb-divider"></div>
-    ${row('Total', red?.totalPoints, blue?.totalPoints, true)}
-    ${row('RP Earned', red?.rp, blue?.rp)}
+    ${row('Total',    red?.totalPoints,   blue?.totalPoints, true)}
+    ${row('RP Earned',red?.rp,            blue?.rp)}
   `;
 }
 
@@ -200,9 +321,17 @@ function renderSchedule() {
     </div>`;
     return;
   }
-  const isMatchComplete = m =>
-    (m.postResultTime && m.scoreRedFinal !== null && m.scoreRedFinal !== undefined) ||
-    scoreDetailData[m.matchNumber] !== undefined;
+  const isMatchComplete = m => {
+    // Explicit completion signals (works for TBA qual/playoff and FRC hybrid)
+    if (m.postResultTime && m.scoreRedFinal !== null && m.scoreRedFinal !== undefined) return true;
+    // Score details loaded (from TBA pre-population or FRC scores endpoint)
+    if (scoreDetailData[m.matchNumber] !== undefined) return true;
+    // Practice fallback: FRC practice schedule has no score fields; treat any match
+    // whose scheduled start was more than 10 minutes ago as completed
+    if (scheduleType === 'practice' && m.startTime)
+      return new Date(m.startTime).getTime() < Date.now() - 10 * 60 * 1000;
+    return false;
+  };
   const completed = scheduleData.filter(isMatchComplete);
   const upcoming  = scheduleData.filter(m => !isMatchComplete(m));
   let html = '';
