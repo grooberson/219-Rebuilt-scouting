@@ -32,16 +32,27 @@ function _getTbaKey() {
 function getTbaEventKey() { return `${FRC_YEAR}${getFrcEvent().toLowerCase()}`; }
 
 // Normalize a TBA score_breakdown alliance to a common internal schema
+// Field names match the 2026 REBUILT game (hub fuel scoring + tower climbing)
 function _normalizeTbaBreakdown(bd, color) {
   if (!bd || !bd[color]) return null;
   const a = bd[color];
   return {
-    autoPoints:    a.autoPoints    ?? a.autoCoralPoints    ?? null,
-    teleopPoints:  a.teleopPoints  ?? a.teleopCoralPoints  ?? null,
-    endgamePoints: a.endGameBargePoints ?? a.bargePoints ?? a.endGamePoints ?? null,
-    foulPoints:    a.foulPoints    ?? null,
-    totalPoints:   a.totalPoints   ?? null,
-    rp:            a.rp            ?? null,
+    autoPoints:       a.totalAutoPoints    ?? null,
+    teleopPoints:     a.totalTeleopPoints  ?? null,
+    endgamePoints:    a.endGameTowerPoints ?? null,
+    foulPoints:       a.foulPoints         ?? null,
+    totalPoints:      a.totalPoints        ?? null,
+    rp:               a.rp                 ?? null,
+    // 2026 REBUILT sub-breakdowns
+    autoHubPoints:    a.hubScore?.autoPoints  ?? null,
+    autoTowerPoints:  a.autoTowerPoints       ?? null,
+    totalTowerPoints: a.totalTowerPoints      ?? null,
+    robot1Climb:      a.endGameTowerRobot1    ?? null,
+    robot2Climb:      a.endGameTowerRobot2    ?? null,
+    robot3Climb:      a.endGameTowerRobot3    ?? null,
+    energized:        a.energizedAchieved     ?? null,
+    supercharged:     a.superchargedAchieved  ?? null,
+    traversal:        a.traversalAchieved     ?? null,
   };
 }
 
@@ -247,29 +258,58 @@ async function loadScoreDetails() {
   }
 }
 
-// Accepts normalized breakdown objects: { autoPoints, teleopPoints, endgamePoints,
-//   foulPoints, totalPoints, rp } — produced by _normalizeTbaBreakdown/_normalizeFrcBreakdown
+// Accepts normalized breakdown objects produced by _normalizeTbaBreakdown/_normalizeFrcBreakdown.
+// Displays 2026 REBUILT game detail: hub/tower sub-scores, robot climb levels, RP bonuses.
 function renderScoreBreakdown(red, blue) {
-  const row = (label, rVal, bVal, bold) => `
-    <div class="sb-row${bold ? ' sb-total' : ''}">
+  const row = (label, rVal, bVal, bold, sub) => `
+    <div class="sb-row${bold ? ' sb-total' : ''}${sub ? ' sb-sub' : ''}">
       <span class="sb-label">${label}</span>
       <span class="sb-val red-col">${rVal ?? '—'}</span>
       <span class="sb-val blue-col">${bVal ?? '—'}</span>
     </div>`;
-  return `
+  const climbStr = v => (!v || v === 'None') ? '—' : v.replace('Level', 'L');
+  const boolStr  = v => v === true ? '✓' : v === false ? '✗' : '—';
+  const section  = text => `<div class="sb-section-label">${text}</div>`;
+
+  const hasAutoDetail  = red?.autoHubPoints != null || blue?.autoHubPoints != null;
+  const hasRobotDetail = red?.robot1Climb   != null || blue?.robot1Climb   != null;
+
+  let html = `
     <div class="sb-header-row">
       <span></span>
       <span class="sb-hdr red-col">RED</span>
       <span class="sb-hdr blue-col">BLUE</span>
     </div>
-    ${row('Auto',     red?.autoPoints,    blue?.autoPoints)}
-    ${row('Teleop',   red?.teleopPoints,  blue?.teleopPoints)}
-    ${row('Endgame',  red?.endgamePoints, blue?.endgamePoints)}
-    ${row('Penalties',red?.foulPoints,    blue?.foulPoints)}
+    ${row('Auto',          red?.autoPoints,    blue?.autoPoints)}`;
+
+  if (hasAutoDetail) {
+    html += `
+    ${row('  Hub',         red?.autoHubPoints,   blue?.autoHubPoints,   false, true)}
+    ${row('  Tower',       red?.autoTowerPoints, blue?.autoTowerPoints, false, true)}`;
+  }
+
+  html += `
+    ${row('Teleop (Hub)',  red?.teleopPoints,  blue?.teleopPoints)}
+    ${row('Endgame Tower', red?.endgamePoints, blue?.endgamePoints)}
+    ${row('Penalties',     red?.foulPoints,    blue?.foulPoints)}
     <div class="sb-divider"></div>
-    ${row('Total',    red?.totalPoints,   blue?.totalPoints, true)}
-    ${row('RP Earned',red?.rp,            blue?.rp)}
-  `;
+    ${row('Total',         red?.totalPoints,   blue?.totalPoints, true)}
+    ${row('RP Earned',     red?.rp,            blue?.rp)}`;
+
+  if (hasRobotDetail) {
+    html += `
+    <div class="sb-divider"></div>
+    ${section('Robot Climbs')}
+    ${row('Robot 1', climbStr(red?.robot1Climb), climbStr(blue?.robot1Climb))}
+    ${row('Robot 2', climbStr(red?.robot2Climb), climbStr(blue?.robot2Climb))}
+    ${row('Robot 3', climbStr(red?.robot3Climb), climbStr(blue?.robot3Climb))}
+    ${section('RP Bonuses')}
+    ${row('Energized',    boolStr(red?.energized),    boolStr(blue?.energized))}
+    ${row('Supercharged', boolStr(red?.supercharged), boolStr(blue?.supercharged))}
+    ${row('Traversal',    boolStr(red?.traversal),    boolStr(blue?.traversal))}`;
+  }
+
+  return html;
 }
 
 function toggleMatchDetail(matchNum) {

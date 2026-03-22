@@ -1558,6 +1558,23 @@ td.td-note-icon {
   border-top: 1px solid var(--border);
   margin: 5px 0;
 }
+.sb-section-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 4px 0 1px;
+}
+.sb-row.sb-sub .sb-label {
+  color: var(--text-dim);
+  font-size: 0.68rem;
+  padding-left: 10px;
+}
+.sb-row.sb-sub .sb-val {
+  font-size: 0.68rem;
+  opacity: 0.75;
+}
 .match-teams-grid {
   padding: 10px 12px;
   display: flex;
