@@ -419,7 +419,9 @@ function getMatchLabel(match) {
 function renderMatchBlock(match, isCompleted) {
   const red  = match.teams.filter(t => t.station.startsWith('Red'));
   const blue = match.teams.filter(t => t.station.startsWith('Blue'));
-  const timeStr = new Date(match.startTime).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+  const timeStr = match.startTime
+    ? new Date(match.startTime).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})
+    : null;
 
   let headerRight;
   if (isCompleted) {
@@ -428,7 +430,9 @@ function renderMatchBlock(match, isCompleted) {
     const blueScore = match.scoreBlueFinal ?? detail?.blue?.totalPoints;
     const rWon = redScore > blueScore;
     const bWon = blueScore > redScore;
-    headerRight = `<div style="display:flex;align-items:center;gap:10px;">
+    const timeBit = timeStr ? `<span class="match-time-badge" style="font-size:0.7rem;opacity:0.55;padding:2px 6px;">${timeStr}</span>` : '';
+    headerRight = `<div style="display:flex;align-items:center;gap:8px;">
+      ${timeBit}
       <div class="match-score-row">
         <span class="match-score-val red-score ${rWon ? 'winner' : ''}">${redScore ?? '—'}</span>
         <span class="match-score-sep">–</span>
@@ -437,7 +441,7 @@ function renderMatchBlock(match, isCompleted) {
       <span class="score-expand-btn">▾</span>
     </div>`;
   } else {
-    headerRight = `<span class="match-time-badge">${timeStr}</span>`;
+    headerRight = timeStr ? `<span class="match-time-badge">${timeStr}</span>` : '';
   }
 
   const makePills = (teams, color) => teams.map(t => {
