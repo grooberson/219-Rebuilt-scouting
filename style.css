@@ -84,6 +84,8 @@ header::after {
   color: var(--text-dim);
   text-align: right;
 }
+/* Row wrappers are invisible to the header flex layout on desktop */
+.header-row-1, .header-row-2 { display: contents; }
 .status-dot {
   display: inline-block;
   width: 7px; height: 7px;
@@ -483,6 +485,16 @@ textarea { resize: vertical; min-height: 80px; }
   transition: border-color 0.2s;
 }
 .search-box:focus { border-color: var(--accent); }
+
+/* Teams card list (mobile) — hidden at desktop, shown at ≤480px via media query */
+.teams-card-list {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.teams-card-list .team-card { cursor: pointer; }
 
 /* Teams table */
 .teams-table-wrap {
@@ -1198,10 +1210,24 @@ td.td-note-icon {
 
 /* Phone (≤480px) */
 @media (max-width: 480px) {
-  /* Header */
-  header { padding: 10px 16px; }
+  /* Header: two-row layout */
+  header { padding: 10px 16px; flex-wrap: wrap; gap: 4px; }
   .logo { font-size: 1.25rem; }
   .logo-sub { display: none; }
+  .header-row-1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .header-row-2 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+  }
 
   /* Nav: tabs fill full width */
   .nav-tabs { padding: 0; gap: 0; }
@@ -1223,12 +1249,9 @@ td.td-note-icon {
   .search-box { width: 100%; }
   .btn-sm { padding: 10px 14px; text-align: center; }
 
-  /* Teams table: hide Matches, Driving, Reliability columns too */
-  #teamsTable th:nth-child(2), #teamsTable td:nth-child(2),
-  #teamsTable th:nth-child(6), #teamsTable td:nth-child(6),
-  #teamsTable th:nth-child(7), #teamsTable td:nth-child(7) { display: none; }
-  /* Remaining visible: Team# · Avg Score · Avg Fuel · Best Climb · Tags */
-  td, thead th { padding: 10px 8px; }
+  /* Teams: hide table, show cards */
+  #teamsTable { display: none; }
+  .teams-card-list { display: flex; }
 
   /* Modal sheets up from bottom on phone */
   .modal-overlay { padding: 0; align-items: flex-end; }

@@ -199,6 +199,7 @@ function renderTeams() {
   const tbody = document.getElementById('teamsBody');
   const empty = document.getElementById('teamsEmpty');
   tbody.innerHTML = '';
+  document.getElementById('teamsCards').innerHTML = '';
 
   if (!filtered.length) {
     empty.style.display='block';
@@ -280,7 +281,65 @@ function renderTeams() {
     `;
     tbody.appendChild(tr);
   });
+  renderTeamsCards(filtered);
   updateEntryCount();
+}
+
+function renderTeamsCards(teams) {
+  const container = document.getElementById('teamsCards');
+  const climbLabel = ['—','L1','L2','L3'];
+  const starRating = v => v > 0 ? '★'.repeat(Math.round(v)) + '☆'.repeat(5 - Math.round(v)) : '—';
+
+  container.innerHTML = teams.map(t => {
+    const teamName = ROSTER_MAP[t.teamNum]?.name || '';
+    const or = officialRankings[t.teamNum];
+    const rankBadge = or
+      ? `<div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--gold);">#${or.rank}</div>
+         <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-dim);">${or.wins}W-${or.losses}L</div>`
+      : '';
+
+    const epaVal = t.statEpa != null
+      ? `<div class="s-num" style="color:${epaColor(t.statEpa)};">${t.statEpa.toFixed(1)}</div>`
+      : `<div class="s-num">—</div>`;
+
+    const tags = [];
+    if (t.hasStrFuelVolume) tags.push('<span class="badge badge-blue">HIGH FUEL</span>');
+    if (t.hasStrClimber)    tags.push('<span class="badge badge-green">CLIMBER</span>');
+    if (t.hasStrConsistentAuto) tags.push('<span class="badge badge-blue">AUTO</span>');
+    if (t.hasStrDefense)    tags.push('<span class="badge badge-orange">DEFENSE</span>');
+    if (t.wkBroke)          tags.push('<span class="badge badge-red">UNRELIABLE</span>');
+    if (t.gotCard)          tags.push('<span class="badge badge-red">CARDED</span>');
+    if (t.wkScoredWrong)    tags.push('<span class="badge badge-red">HUB ERR</span>');
+
+    const rawNote = t.entries.slice(-1)[0]?.notes || '';
+    const noteRow = rawNote
+      ? `<div style="margin-top:8px;font-family:var(--font-mono);font-size:0.65rem;color:var(--text-dim);border-top:1px solid var(--border);padding-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${rawNote.replace(/"/g,'&quot;')}">ⓘ ${rawNote}</div>`
+      : '';
+
+    return `
+      <div class="team-card" onclick="openTeamModal(${t.teamNum})">
+        <div class="card-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <img class="card-avatar" src="${teamAvatar(t.teamNum)}" alt="" onerror="this.style.display='none'">
+            <div>
+              <div class="card-team-num">${t.teamNum}</div>
+              ${teamName ? `<div class="card-team-name">${teamName}</div>` : ''}
+            </div>
+          </div>
+          <div style="text-align:right;">${rankBadge}</div>
+        </div>
+        <div class="card-stats">
+          <div class="stat-box"><div class="s-num">${t.avgScore}</div><div class="s-lbl">Avg Score</div></div>
+          <div class="stat-box"><div class="s-num">${t.avgFuel}</div><div class="s-lbl">Avg Fuel</div></div>
+          <div class="stat-box"><div class="s-num">${climbLabel[t.bestClimb]}</div><div class="s-lbl">Best Climb</div></div>
+          <div class="stat-box">${epaVal}<div class="s-lbl">◈ EPA</div></div>
+          <div class="stat-box"><div class="s-num">${t.matches}</div><div class="s-lbl">Matches</div></div>
+          <div class="stat-box"><div class="s-num" style="font-size:0.75rem;">${starRating(t.avgReliability)}</div><div class="s-lbl">Reliability</div></div>
+        </div>
+        ${tags.length ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;">${tags.join('')}</div>` : ''}
+        ${noteRow}
+      </div>`;
+  }).join('');
 }
 
 function sortTeams(key) {
