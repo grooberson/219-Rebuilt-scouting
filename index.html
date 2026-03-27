@@ -371,11 +371,14 @@
       </div>
       <div class="teams-controls">
         <input class="search-box" type="text" id="teamSearch" placeholder="Search team #..." oninput="renderTeams()">
+        <button class="btn-sm" onclick="showScoutReport()">◎ Scout Report</button>
+        <button class="btn-sm teams-gear-btn" onclick="toggleTeamsTools()" title="Data tools">⚙</button>
+      </div>
+      <div class="teams-tools-drawer" id="teamsToolsDrawer">
         <button class="btn-sm" onclick="exportCSV()">↓ Export CSV</button>
         <button class="btn-sm" onclick="exportJSON()">↓ Export JSON</button>
         <button class="btn-sm" onclick="document.getElementById('importFile').click()">↑ Import JSON</button>
         <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(this)">
-        <button class="btn-sm" onclick="showScoutReport()">◎ Scout Report</button>
         <button class="btn-sm danger" onclick="clearAll()">✕ Clear All Data</button>
       </div>
     </div>

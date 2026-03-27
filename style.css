@@ -449,6 +449,27 @@ textarea { resize: vertical; min-height: 80px; }
   flex-wrap: wrap;
   align-items: center;
 }
+.teams-gear-btn {
+  font-size: 1rem;
+  padding: 4px 8px;
+  opacity: 0.6;
+  transition: opacity 0.15s, transform 0.2s;
+}
+.teams-gear-btn:hover { opacity: 1; }
+.teams-gear-btn.open {
+  opacity: 1;
+  transform: rotate(60deg);
+}
+.teams-tools-drawer {
+  display: none;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 6px 0 2px;
+}
+.teams-tools-drawer.open {
+  display: flex;
+}
 .btn-sm {
   padding: 8px 16px;
   border: 1px solid var(--border);
@@ -1245,7 +1266,8 @@ td.td-note-icon {
 
   /* Teams view controls */
   .teams-header { flex-direction: column; align-items: stretch; gap: 10px; }
-  .teams-controls { flex-direction: column; }
+  .teams-controls { flex-direction: row; }
+  .teams-tools-drawer.open { flex-direction: column; }
   .search-box { width: 100%; }
   .btn-sm { padding: 10px 14px; text-align: center; }
 

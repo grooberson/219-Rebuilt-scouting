@@ -743,6 +743,17 @@ function showScoutReport() {
 }
 
 // ===========================
+// TEAMS TOOLS DRAWER
+// ===========================
+function toggleTeamsTools() {
+  const drawer = document.getElementById('teamsToolsDrawer');
+  const btn = document.querySelector('.teams-gear-btn');
+  if (!drawer) return;
+  const open = drawer.classList.toggle('open');
+  if (btn) btn.classList.toggle('open', open);
+}
+
+// ===========================
 // EXPORT / IMPORT
 // ===========================
 function exportCSV() {
