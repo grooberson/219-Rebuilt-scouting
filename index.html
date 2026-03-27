@@ -515,9 +515,10 @@
         <button id="schedType-qual" class="btn-sm sched-tab-active" onclick="setScheduleType('qual')">Qual</button>
         <button id="schedType-playoff" class="btn-sm" onclick="setScheduleType('playoff')">Playoff</button>
       </div>
-      <div style="display:flex;gap:6px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
         <button id="schedToggleUpcoming" class="btn-sm sched-tab-active" onclick="setScheduleView('upcoming')">Upcoming</button>
         <button id="schedToggleCompleted" class="btn-sm" onclick="setScheduleView('completed')">Completed</button>
+        <input class="search-box" type="text" id="schedTeamSearch" placeholder="Filter team #..." oninput="onSchedTeamSearch()" style="margin-left:auto;width:140px;">
       </div>
       <div id="scheduleList">
         <div class="empty-state">
