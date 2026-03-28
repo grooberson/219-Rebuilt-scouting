@@ -39,17 +39,9 @@
       <div class="logo">REBUILT<span>.</span>SCOUT</div>
       <div class="logo-sub">FRC 2026 — ALLIANCE SELECTION TOOL</div>
     </div>
-    <div class="readonly-badge">
-      <span class="ro-label">READ-ONLY</span>
-      <button class="ro-login-btn" onclick="showLoginOverlay()">→ Scout Login</button>
-    </div>
-    <div id="logoutBtn" style="display:none;align-items:center;gap:10px;font-family:var(--font-mono);font-size:0.7rem;">
-      <span class="logout-user" style="color:var(--text-dim);letter-spacing:0.06em;"></span>
-      <button onclick="doLogout()" style="
-        background:none;border:1px solid var(--text-dim);color:var(--text-dim);
-        font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.08em;
-        padding:3px 10px;border-radius:4px;cursor:pointer;
-      ">⎋ Logout</button>
+    <div id="logoutBtn" class="header-auth-ctrl" style="display:none;">
+      <span class="logout-user"></span>
+      <button id="logoutActionBtn" class="header-auth-btn"></button>
     </div>
   </div>
   <div class="header-row-2">

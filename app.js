@@ -50,7 +50,7 @@ function doViewOnly() {
   readOnly = true;
   document.body.classList.add('read-only');
   document.getElementById('loginOverlay').style.display = 'none';
-  _showLogoutBtn('View Only');
+  _showLogoutBtn(null, 'readonly');
 }
 
 function doTestMode() {
@@ -67,12 +67,28 @@ function showLoginOverlay() {
   document.getElementById('loginOverlay').style.display = 'flex';
 }
 
-function _showLogoutBtn(label) {
-  const btn = document.getElementById('logoutBtn');
-  if (!btn) return;
-  btn.style.display = 'flex';
-  const nameEl = btn.querySelector('.logout-user');
-  if (nameEl) nameEl.textContent = label;
+function _showLogoutBtn(label, mode) {
+  const container = document.getElementById('logoutBtn');
+  if (!container) return;
+  const nameEl = container.querySelector('.logout-user');
+  const actionBtn = document.getElementById('logoutActionBtn');
+  if (!nameEl || !actionBtn) return;
+
+  if (mode === 'readonly') {
+    nameEl.textContent = 'READ ONLY';
+    nameEl.className = 'logout-user logout-user--readonly';
+    actionBtn.textContent = '→ Scout Login';
+    actionBtn.className = 'header-auth-btn header-auth-btn--login';
+    actionBtn.onclick = showLoginOverlay;
+  } else {
+    nameEl.textContent = label;
+    nameEl.className = 'logout-user';
+    actionBtn.textContent = '⎋ Logout';
+    actionBtn.className = 'header-auth-btn header-auth-btn--logout';
+    actionBtn.onclick = doLogout;
+  }
+
+  container.style.display = 'flex';
 }
 
 function doLogout() {
@@ -903,7 +919,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     readOnly = true;
     document.body.classList.add('read-only');
     document.getElementById('loginOverlay').style.display = 'none';
-    _showLogoutBtn('View Only');
+    _showLogoutBtn(null, 'readonly');
   } else if (savedName) {
     // Pre-fill name so returning scouts only need to enter the password
     document.getElementById('loginName').value = savedName;
