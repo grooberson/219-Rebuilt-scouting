@@ -449,6 +449,12 @@ function renderMatchBlock(match, isCompleted) {
     const name = info ? info.name : '';
     const shortName = name.length > 13 ? name.slice(0, 12) + '…' : name;
     const allianceVal = color === 'red' ? 'Red' : 'Blue';
+    if (scheduleType !== 'qual') {
+      return `<span class="team-pill ${color} pill-no-scout" title="Only qualification matches are scouted">
+        <span class="pill-num">${t.teamNumber}</span>
+        <span class="pill-name">${shortName}</span>
+      </span>`;
+    }
     return `<button class="team-pill ${color}"
         onclick="scoutFromSchedule(${t.teamNumber},${match.matchNumber},'${allianceVal}')">
       <span class="pill-num">${t.teamNumber}</span>
@@ -480,6 +486,10 @@ function renderMatchBlock(match, isCompleted) {
 }
 
 function scoutFromSchedule(teamNum, matchNum, alliance) {
+  if (scheduleType !== 'qual') {
+    showToast('Only qualification matches are scouted', 'warn');
+    return;
+  }
   const info = ROSTER_MAP[teamNum];
   const teamName = info ? info.name : '';
   // Switch to scout tab

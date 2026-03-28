@@ -1649,6 +1649,7 @@ td.td-note-icon {
 .team-pill.red:hover { background: rgba(255,85,85,0.12); border-color: #ff5555; }
 .team-pill.blue { border-color: rgba(85,136,255,0.3); }
 .team-pill.blue:hover { background: rgba(85,136,255,0.12); border-color: #5588ff; }
+.team-pill.pill-no-scout { opacity: 0.45; cursor: default; pointer-events: none; }
 .pill-num {
   font-family: var(--font-mono);
   font-size: 0.88rem;
