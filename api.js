@@ -213,7 +213,20 @@ async function loadSchedule(isAutoRefresh = false) {
       'Updated ' + new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
   } catch (e) {
     if (gen !== _schedGeneration) return;
-    document.getElementById('schedStatus').textContent = '⚠ Schedule unavailable';
+    const statusCode = e.message && /^\d+$/.test(e.message) ? e.message : null;
+    const isTransient = statusCode && (statusCode === '502' || statusCode === '503' || statusCode === '504');
+    const hint = isTransient
+      ? `Server error (${statusCode}) — will retry in 60s`
+      : statusCode
+        ? `API error (${statusCode})`
+        : 'Schedule unavailable';
+    document.getElementById('schedStatus').textContent = '⚠ ' + hint;
+    const container = document.getElementById('scheduleList');
+    if (container) container.innerHTML = `<div class="empty-state" style="padding:40px 0;">
+      <div style="font-size:1.5rem;margin-bottom:10px;">⚠</div>
+      <div style="font-family:var(--font-display);font-size:1rem;color:var(--text);">${hint}</div>
+      <div style="color:var(--text-dim);margin-top:8px;font-size:0.8rem;">The schedule will reload automatically.</div>
+    </div>`;
     console.warn('Schedule fetch failed:', e);
   }
   // Start 60-second auto-refresh countdown
