@@ -464,11 +464,11 @@ function closeDeleteConfirm() {
 }
 
 function _isLiveEventLocked() {
-  return !sessionStorage.getItem('rebuilt_testMode') && currentEvent === 'NJWAS';
+  return !sessionStorage.getItem('rebuilt_testMode') && (currentEvent === 'NJWAS' || currentEvent === 'NJFLA');
 }
 
 function deleteTeam(teamNum) {
-  if (_isLiveEventLocked()) { showToast('NJWAS event is locked — deletes are disabled in live mode'); return; }
+  if (_isLiveEventLocked()) { showToast(currentEvent + ' event is locked — deletes are disabled in live mode'); return; }
   _openDeleteConfirm({
     title: 'Confirm Delete',
     description: `This will permanently delete all scouting entries for team ${teamNum}. This cannot be undone.`,
@@ -821,7 +821,7 @@ function importJSON(input) {
 }
 
 function deleteEntry(entryId, teamNum) {
-  if (_isLiveEventLocked()) { showToast('NJWAS event is locked — deletes are disabled in live mode'); return; }
+  if (_isLiveEventLocked()) { showToast(currentEvent + ' event is locked — deletes are disabled in live mode'); return; }
   if (!confirm('Delete this match entry?')) return;
   const hasRemaining = getData().filter(e => e.teamNum === teamNum && e.id !== entryId).length > 0;
   deleteEntryFromFirestore(entryId)
@@ -835,7 +835,7 @@ function deleteEntry(entryId, teamNum) {
 }
 
 function clearAll() {
-  if (_isLiveEventLocked()) { showToast('NJWAS event is locked — deletes are disabled in live mode'); return; }
+  if (_isLiveEventLocked()) { showToast(currentEvent + ' event is locked — deletes are disabled in live mode'); return; }
   _openDeleteConfirm({
     title: 'Clear All Data',
     description: `This will permanently delete ALL scouting data for event ${currentEvent}. This cannot be undone.`,
