@@ -579,7 +579,7 @@ td.team-num {
 }
 td.score-cell {
   font-family: var(--font-mono);
-  color: var(--gold);
+  color: var(--accent);
   font-weight: 700;
 }
 /* Tags cell — allow badges to wrap */
